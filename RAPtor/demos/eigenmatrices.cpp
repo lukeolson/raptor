@@ -37,7 +37,7 @@ int main() {
     std::cout << "--------------------------------------" << std::endl;
     std::cout << "Original data (double*):" << std::endl;
     const int m = 3, n = 3;
-    double* data = (double*) _mm_malloc(m*n*sizeof(double), 16);
+    double* data = (double*) _mm_malloc(m*n*sizeof(double), 8);
     init_array(data, m, n);
     print_array(data, m, n);
     std::cout << "--------------------------------------" << std::endl;
