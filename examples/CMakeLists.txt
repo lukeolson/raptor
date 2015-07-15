@@ -1,3 +1,7 @@
 include_directories(${raptor_INCDIR})
 add_executable(vecnorm vecnorm.cpp)
 target_link_libraries(vecnorm raptor ${MPI_LIBRARIES})
+add_executable(benchmark benchmark.cpp)
+target_link_libraries(benchmark raptor ${MPI_LIBRARIES})
+configure_file(LFAT5.mtx ${CMAKE_BINARY_DIR}/examples/LFAT5.mtx COPYONLY)
+configure_file(LFAT5.mtx ${CMAKE_BINARY_DIR}/test/LFAT5.mtx COPYONLY)
