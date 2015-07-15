@@ -614,7 +614,7 @@ MPIUni_PETSC_EXTERN double MPI_Wtime(void);
 #define MPI_Allreduce(sendbuf, recvbuf,count,datatype,op,comm) ({ \
      MPIUNI_Memcpy(recvbuf,sendbuf,(count)*MPI_sizeof(datatype)); \
      MPIUNI_TMP = (void*)(MPIUNI_INTPTR) (comm); \
-     return MPI_SUCCESS; \
+     MPI_SUCCESS; \
     })
 #define MPI_Scan(sendbuf, recvbuf,count,datatype,op,comm) \
      (MPIUNI_Memcpy(recvbuf,sendbuf,(count)*MPI_sizeof(datatype)),\
