@@ -1,2 +1,6 @@
-find_package(MPI REQUIRED)
+find_package(MPI QUIET)
+if (NOT MPI_FOUND)
+set(MPI_INCLUDE_PATH /home/nate/raptor/external/mpiuni)
+set(MPI_LIBRARIES /home/nate/raptor/external/mpiuni/libmpiuni.a)
+endif(NOT MPI_FOUND)
 include_directories(${MPI_INCLUDE_PATH})
