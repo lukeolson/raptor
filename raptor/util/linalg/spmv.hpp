@@ -16,8 +16,8 @@ using namespace raptor;
 //void sequentialSPMV(CSRMatrix* A, Vector* x, Vector* y, double alpha, double beta);
 //void parallelSPMV(ParMatrix* A, ParVector* x, ParVector* y, double alpha, double beta);
 
-template <typename Derived = data_t>
-void sequentialSPMV(Matrix* A, const Vector &x, Vector* y, double alpha, double beta)
+template <typename Derived>
+void sequentialSPMV(Matrix* A, const Eigen::MatrixBase<Derived> & x, Vector* y, double alpha, double beta)
 {
     *y = alpha*((*(A->m))*(x)) + beta * (*y);
 }
