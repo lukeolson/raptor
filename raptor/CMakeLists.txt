@@ -3,6 +3,7 @@ include_directories(.)
 add_subdirectory(core)
 add_subdirectory(gallery)
 add_subdirectory(util)
+add_subdirectory(krylov)
 add_subdirectory(smoothed_aggregation)
 add_subdirectory(ruge_stuben)
 add_subdirectory(multilevel)
@@ -17,7 +18,8 @@ else()
 endif()
 
 add_library(raptor STATIC ${core_SOURCES} ${gallery_SOURCES} ${util_SOURCES}
-    ${par_SOURCES} strength.cpp ${ruge_stuben_SOURCES} ${multilevel_SOURCES})
+    ${par_SOURCES} strength.cpp ${ruge_stuben_SOURCES} ${multilevel_SOURCES}
+    ${krylov_SOURCES})
 
 target_link_libraries(raptor ${MFEM_LIBRARIES} ${METIS_LIBRARIES} ${HYPRE_LIBRARIES}
     ${PTSCOTCH_LIBRARIES} ${EXTERNAL_LIBS} )
@@ -31,4 +33,5 @@ if(ENABLE_UNIT_TESTS)
     add_subdirectory(ruge_stuben/tests)
     add_subdirectory(multilevel/tests)
     add_subdirectory(gallery/tests)
+    add_subdirectory(krylov/tests)
 endif()
