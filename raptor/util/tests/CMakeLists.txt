@@ -11,8 +11,12 @@
 #add_test(RandomSpMVTest ./test_spmv_random)
 
 add_executable(test_fwd_sub test_fwd_sub.cpp)
-target_link_libraries(test_fwd_sub raptor ${MPI_LIBRARIES})
+target_link_libraries(test_fwd_sub raptor)
 add_test(FwdSubTest ./test_fwd_sub)
+
+add_executable(test_par_fwd_sub test_par_fwd_sub.cpp)
+target_link_libraries(test_par_fwd_sub raptor ${MPI_LIBRARIES})
+add_test(ParFwdSubTest ./test_par_fwd_sub)
 
 #if (WITH_MPI)
 #    add_executable(test_par_spmv_laplacian test_par_spmv_laplacian.cpp)
