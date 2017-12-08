@@ -803,7 +803,7 @@ namespace raptor
     //--------------------------------------------------------------
     // FWD SUB DEFINITION
     //--------------------------------------------------------------
-    void fwd_sub(std::vector<double>& y, const std::vector<double>& b);
+    void fwd_sub(std::vector<double>& y, std::vector<double>& b);
 
     CSRBoolMatrix* strength(double theta = 0.0);
     CSRMatrix* aggregate();
