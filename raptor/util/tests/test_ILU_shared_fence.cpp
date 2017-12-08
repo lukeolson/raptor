@@ -167,7 +167,7 @@ int main (int argc, char *argv[])
 	MPI_Win sm_winT0, sm_winT1, sm_winT2, sm_winT3, sm_winT4;
 	MPI_Info info;
 	MPI_Info_create(&info);
-	//MPI_Info_set(info, "alloc_shared_noncontig", "true");
+	MPI_Info_set(info, "no_locks", "true");
 
 	if (myRank == root) {
 		MPI_Win_allocate_shared((MPI_Aint) size_colptr*sizeof(int),sizeof(int),info,sm_comm,&U_colptr_shared,&sm_winT0);
@@ -199,11 +199,11 @@ int main (int argc, char *argv[])
 	MPI_Barrier(sm_comm);
 	elapsed_time = -MPI_Wtime();
 
-	MPI_Win_lock_all(0,sm_winT0);
-	MPI_Win_lock_all(0,sm_winT1);
-	MPI_Win_lock_all(0,sm_winT2);
-	MPI_Win_lock_all(0,sm_winT3);
-	MPI_Win_lock_all(0,sm_winT4);
+	MPI_Win_fence(MPI_MODE_NOPRECEDE,sm_winT0);
+	MPI_Win_fence(MPI_MODE_NOPRECEDE,sm_winT1);
+	MPI_Win_fence(MPI_MODE_NOPRECEDE,sm_winT2);
+	MPI_Win_fence(MPI_MODE_NOPRECEDE,sm_winT3);
+	MPI_Win_fence(MPI_MODE_NOPRECEDE,sm_winT4);
 
 
 	//initialize the shared vector
@@ -225,17 +225,16 @@ int main (int argc, char *argv[])
 		}
 	} // end if //
 
-	MPI_Win_sync(sm_winT0);
-	MPI_Win_sync(sm_winT1);
-	MPI_Win_sync(sm_winT2);
-	MPI_Win_sync(sm_winT3);
-	MPI_Win_sync(sm_winT4);
-	//MPI_Barrier(sm_comm);
-
+	MPI_Win_fence(MPI_MODE_NOPUT|MPI_MODE_NOSUCCEED,sm_winT0);
+	MPI_Win_fence(MPI_MODE_NOPUT|MPI_MODE_NOSUCCEED,sm_winT1);
+	MPI_Win_fence(MPI_MODE_NOPUT|MPI_MODE_NOSUCCEED,sm_winT2);
+	MPI_Win_fence(MPI_MODE_NOPUT|MPI_MODE_NOSUCCEED,sm_winT3);
+	MPI_Win_fence(MPI_MODE_NOPUT|MPI_MODE_NOSUCCEED,sm_winT4);
 
 	//Philipp timing position
 	//MPI_Barrier(sm_comm);
 	//elapsed_time = -MPI_Wtime();
+
 
 	//////////////////////////////////////////////////////////
 
@@ -247,8 +246,8 @@ int main (int argc, char *argv[])
 
 		//call icc
 		icc_sweep(U_colptr_shared, U_indices_shared, aij_U_shared, U_data_shared, U_backup_shared, mystart, myend);
-		MPI_Win_sync(sm_winT3);
-		//MPI_Barrier(sm_comm);	 
+		MPI_Win_fence(MPI_MODE_NOPUT|MPI_MODE_NOSUCCEED,sm_winT3);
+
 	}	
 
 	//Philipp time stopping position
@@ -259,13 +258,6 @@ int main (int argc, char *argv[])
 	for(int i = 0; i < size_data; i++){
 		U_data[i] = U_data_shared[i];
 	}
-
-
-	MPI_Win_unlock_all(sm_winT0);
-	MPI_Win_unlock_all(sm_winT1);
-	MPI_Win_unlock_all(sm_winT2);
-	MPI_Win_unlock_all(sm_winT3);
-	MPI_Win_unlock_all(sm_winT4);
 
 	//My time stopping position
 	MPI_Barrier(sm_comm);

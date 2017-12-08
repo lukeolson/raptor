@@ -38,7 +38,7 @@ int main (int argc, char *argv[])
 	//const char * filename = "block_test.txt";
 
 	//timing variables
-	double tm1, tm2, tdiff;
+	double tm1, tm2, tdiff =0.0;
 	int num_tests = 1;
 
 	// Variables to clear cache between tests
@@ -82,9 +82,29 @@ int main (int argc, char *argv[])
 
 	//Diagonal scaling of the entries	
 	diagonal_scaling_csr_symmetric(Acsr);
-
+	
+	//uncomment this if you want to run regular icc
+	/*
+	CSCMatrix* Acsc = new CSCMatrix(Acsr);
 	//printf("A csr after scaling \n");
-	//Acsr->print();
+	Acsc->sort();
+	
+	get_ctime(tm1);
+  
+	icc(Acsc);
+
+	get_ctime(tm2);
+
+	tdiff += (tm2-tm1);
+
+	tdiff /= num_tests;
+
+
+	//std::cout << "ICC fine grained clock get time took " << tdiff << std::endl;
+    printf ("Total time for ICC was %f seconds.\n", tdiff);
+    printf("%f \n",tdiff);
+
+	return 0;*/
 
 	//Convert matrix to COO to get initial guesses for L and U 
 	COOMatrix* Acoo = new COOMatrix(Acsr);
@@ -133,25 +153,25 @@ int main (int argc, char *argv[])
 	
 	for (int i = 0; i < num_tests; i++){
 
-		get_ctime(tm1);
+	//	get_ctime(tm1);
   
 		icc_fine_grained(Ucsc, aij_U, num_sweeps, numt);
 
 		//t = clock() - t;
 		//double tm2 = sys_timer();
 
-		get_ctime(tm2);
+	//	get_ctime(tm2);
 
-		tdiff += (tm2-tm1);
+	//	tdiff += (tm2-tm1);
 		//clear_cache(cache_len, cache_array);
 	}
 
-	tdiff /= num_tests;
+	//tdiff /= num_tests;
 
 
 	//std::cout << "ICC fine grained clock get time took " << tdiff << std::endl;
     //printf ("Total time for ICC was %f seconds.\n", tdiff);
-    printf("%f \n",tdiff);
+    	//printf("%f \n",tdiff);
 
   	//Get arrays corresponding to U after the ICC factorization is done 
 //	std::cout << "U after icc" <<std::endl;
@@ -507,7 +527,7 @@ void icc_fine_grained(CSCMatrix* Ucsc, std::vector<double> const & aij_U, int nu
 	//Uncomment this out if running with OpenMP!!!!!!!!!!!!
 	//omp_set_num_threads(numt);
 
-		
+	double tm1,tm2,tdiff=0.0;
 		
 /*	//
 	std::cout << "Ucsc data =" << " "; 
@@ -530,7 +550,7 @@ void icc_fine_grained(CSCMatrix* Ucsc, std::vector<double> const & aij_U, int nu
 		//#pragma omp parallel proc_bind(close)
 		#pragma omp parallel
 		{
-		#pragma omp for
+		#pragma omp for nowait
 		for(int col_j=0; col_j < Ucsc->n_cols; col_j++){
 			//Update U
 			int col_j_start = U_colptr[col_j];
@@ -601,11 +621,75 @@ void icc_fine_grained(CSCMatrix* Ucsc, std::vector<double> const & aij_U, int nu
 			}
 
 		}
+//	}
+
+		get_ctime(tm1);
+		for(int i =0; i<1000;i++)		
+			#pragma omp flush
+		get_ctime(tm2);
+		tdiff += (tm2-tm1);
 	}
-	}
+}
+
+		tdiff /= (1000*num_sweeps);
+    		printf("time for flush = %f \n",tdiff);
+
+
 }	
 
+void icc(CSCMatrix* Lcsc){
+	//get arrays corresponding to each matrix
+	std::vector<int> & l_colptr = Lcsc->col_ptr();
+	std::vector<int> & l_rowptr = Lcsc->rows();
+	std::vector<double> & l_data = Lcsc->data();
+	
+	#pragma omp parallel for 	
+	for(int col_k=0; col_k < Lcsc->n_cols;col_k++){
+		int col_k_start = l_colptr[col_k];
+		int col_k_end = l_colptr[col_k+1];
 
+		int diag_index = col_k_start;
+
+		for(int row_i_ind = col_k_start; row_i_ind<col_k_end;row_i_ind++){
+			int row_i = l_rowptr[row_i_ind];
+			if(row_i == col_k){
+				diag_index = row_i_ind;
+				l_data[row_i_ind] = std::sqrt(l_data[row_i_ind]);
+			}
+		}
+
+		for(int row_i_ind = col_k_start; row_i_ind<col_k_end;row_i_ind++){
+			int row_i = l_rowptr[row_i_ind];
+			if(row_i > col_k){
+				l_data[row_i_ind] = l_data[row_i_ind]/l_data[diag_index];
+			}
+		}
+
+		for(int col_j=col_k+1; col_j<Lcsc->n_cols;col_j++){
+			int col_j_start = l_colptr[col_j];
+			int col_j_end = l_colptr[col_j+1];
+			for(int row_i_index = col_j_start; row_i_index< col_j_end; row_i_index++){
+				int row_i = l_rowptr[row_i_index];
+				if(row_i > col_k){
+					double aik = 0.0;
+					double ajk = 0.0;
+					
+					for(int temp_ind = col_k_start; temp_ind <col_k_end;temp_ind++){
+						int temp_row_i = l_rowptr[temp_ind];
+						if(temp_row_i==row_i){
+							aik = l_data[temp_ind];
+						}
+						if(temp_row_i==col_j){
+							ajk = l_data[temp_ind];
+						}
+					}
+
+					l_data[row_i_index]=l_data[row_i_index]-aik*ajk;
+				}
+			}
+		}
+	}
+}
 
 void ilu_fine_grained(CSRMatrix* Lcsr, CSCMatrix* Ucsc, std::vector<double> const & aij_L, std::vector<double> const & aij_U, int num_sweeps){
 	//get arrays corresponding to each matrix

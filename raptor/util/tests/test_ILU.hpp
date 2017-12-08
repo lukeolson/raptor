@@ -46,6 +46,7 @@ void ilu_fine_grained(CSRMatrix* Lcsr,//matrix L in CSR format
 					 std::vector<double> const & aij_U,//data array of the upper triangular part of the matrix A to be factorized
 					 int num_sweeps);//number of sweeps of the fine grained ILU
 
+void icc(CSCMatrix* Lcsc);
 /*
  * This function performs a fine grained ICC factorization
  */

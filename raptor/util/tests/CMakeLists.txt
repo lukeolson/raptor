@@ -10,6 +10,20 @@ add_executable(test_spmv_random test_spmv_random.cpp)
 target_link_libraries(test_spmv_random raptor)
 add_test(RandomSpMVTest ./test_spmv_random)
 
+add_executable(test_ILU test_ILU.cpp mmio.cpp PCG_ILU.cpp)
+target_link_libraries(test_ILU raptor ${MPI_LIBRARIES})
+add_test(ILUtest ./test_ILU)
+
+add_executable(test_ILU_shared test_ILU_shared.cpp mmio.cpp PCG_ILU.cpp)
+target_link_libraries(test_ILU_shared raptor ${MPI_LIBRARIES})
+add_test(ILUtestshared ./test_ILU_shared)
+
+add_executable(test_ILU_shared_fence test_ILU_shared_fence.cpp mmio.cpp PCG_ILU.cpp)
+target_link_libraries(test_ILU_shared_fence raptor ${MPI_LIBRARIES})
+add_test(ILUtestsharedfence ./test_ILU_shared_fence)
+
+
+
 if (WITH_MPI)
     add_executable(test_par_spmv_laplacian test_par_spmv_laplacian.cpp)
     target_link_libraries(test_par_spmv_laplacian raptor)
@@ -32,6 +46,6 @@ if (WITH_MPI)
     add_test(ParRandomSpMVTest_8 mpirun -n 8 ./test_par_spmv_random)
     add_test(ParRandomSpMVTest_16 mpirun -n 16 ./test_par_spmv_random)
 
-    add_executable(test_repartition test_repartition.cpp)
-    target_link_libraries(test_repartition raptor)
+    #add_executable(test_repartition test_repartition.cpp)
+    #target_link_libraries(test_repartition raptor)
 endif()
