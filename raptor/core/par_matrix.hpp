@@ -542,12 +542,11 @@ namespace raptor
     CSRMatrix* mult_T_partial(CSCMatrix* A_off);
     void mult_T_combine(ParCSCMatrix* A, ParCSRMatrix* C, CSRMatrix* recv_on,
             CSRMatrix* recv_off);
-  };
-
     //---------------------------------------
     // FWD SUB DEFINITION
     //---------------------------------------
     void fwd_sub(ParVector& y, ParVector& b);
+  };
 
   class ParCSCMatrix : public ParMatrix
   {
