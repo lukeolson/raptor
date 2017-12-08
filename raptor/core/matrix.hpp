@@ -224,6 +224,11 @@ namespace raptor
     void RAP(const CSCMatrix& P, CSCMatrix* Ac);
     void RAP(const CSCMatrix& P, CSRMatrix* Ac);
 
+    //--------------------------------------------------------------
+    // FWD SUB DEFINITION
+    //--------------------------------------------------------------
+    virtual void fwd_sub(Vector& y, Vector& b) = 0;
+
     Matrix* subtract(Matrix* B);
 
     void resize(int _n_rows, int _n_cols);
@@ -501,6 +506,11 @@ namespace raptor
     void mult_append_neg(Vector& x, Vector& b);
     void mult_append_T(Vector& x, Vector& b);
     void mult_append_neg_T(Vector& x, Vector& b);
+
+    //--------------------------------------------------------------
+    // FWD SUB DEFINITION
+    //--------------------------------------------------------------
+    void fwd_sub(Vector& y, Vector& b);
 
     format_t format()
     {
@@ -803,7 +813,7 @@ namespace raptor
     //--------------------------------------------------------------
     // FWD SUB DEFINITION
     //--------------------------------------------------------------
-    void fwd_sub(std::vector<double>& y, std::vector<double>& b);
+    void fwd_sub(Vector& y, Vector& b);
 
     CSRBoolMatrix* strength(double theta = 0.0);
     CSRMatrix* aggregate();
@@ -1087,6 +1097,11 @@ namespace raptor
 
     void jacobi(Vector& x, Vector& b, Vector& tmp, double omega = .667);    
 
+    //--------------------------------------------------------------
+    // FWD SUB DEFINITION
+    //--------------------------------------------------------------
+    void fwd_sub(Vector& y, Vector& b);
+
     format_t format()
     {
         return CSC;
@@ -1342,6 +1357,13 @@ namespace raptor
             }
         }
     }
+
+    //--------------------------------------------------------------
+    // FWD SUB DEFINITION
+    //--------------------------------------------------------------
+    void fwd_sub(Vector& y, Vector& b){
+	printf("Not implemented for CSRBoolMatrix.\n");
+    };
 
     format_t format()
     {

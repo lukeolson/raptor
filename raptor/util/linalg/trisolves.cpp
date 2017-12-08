@@ -30,13 +30,13 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
         on_proc->fwd_sub(y.local, b.local);
 
         // Send local updated portion of y to next rank
-        MPI_Send(&(y.local)[0], y->local_n, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD);
+        MPI_Send(&(y.local)[0], y.local_n, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD);
 
     }
     // Else receive updated x from previous procs then perform seq fwd sub
     else{
 
-        int recv_cnt = y->local_n * rank;
+        int recv_cnt = y.local_n * rank;
         Vector off_y(recv_cnt);
 
         // Receive updated portion of y from previous rank
@@ -47,24 +47,24 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
             start_off = off_proc->idx1[i];
             end_off = off_proc->idx1[i+1];
             for (j=start_off; j<end_off; j++){
-                y.local[i] -= vals[j] * off_y.values[idx2[j]];
+                y.local[i] -= off_proc->vals[j] * off_y.values[off_proc->idx2[j]];
             }
           
             // Perform seq fwd sub on on_proc with updated local y
             start_on = on_proc->idx1[i];
             end_on = on_proc->idx1[i+1];
             for (j=start_on; j<end_on; j++){
-                y.local[i] -= vals[j] * y.local[idx2[j]];
+                y.local[i] -= on_proc->vals[j] * y.local[on_proc->idx2[j]];
             }
-            y.local[i] /= vals[end_on-1];
+            y.local[i] /= on_proc->vals[end_on-1];
         }
 
         // Only send your updated y portion if you're not the last process
         if (rank != num_procs-1){
 
-            int send_cnt = recv_count + y->local_n;
+            int send_cnt = recv_cnt + y.local_n;
             // Appending local y calculations onto off_y calculations
-            off_y.values.insert(off_y.values.end(), y.local.begin(), y.local.end());
+            off_y.values.insert(off_y.values.end(), y.local.values.begin(), y.local.values.end());
             // Send updated portion of y to next rank
             MPI_Send(&(off_y.values)[0], send_cnt, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD);
 

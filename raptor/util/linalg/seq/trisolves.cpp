@@ -19,13 +19,13 @@ using namespace raptor;
 *****    Array in which to place the solution
 ***** b : T*
 *****    Array containing vector data 
-**************************************************************
+**************************************************************/
 void COOMatrix::fwd_sub(Vector& y, Vector& b)
 {    
     printf("Forward Substitution Not Implemented for these matrix types\n");
-}*/
+}
 
-void CSRMatrix::fwd_sub(std::vector<double>& y, std::vector<double>& b)
+void CSRMatrix::fwd_sub(Vector& y, Vector& b)
 {   
     int start, end;
     y.copy(b); 
@@ -35,18 +35,18 @@ void CSRMatrix::fwd_sub(std::vector<double>& y, std::vector<double>& b)
         end = idx1[i+1];
         for (int j=start; j<end; j++)
         {
-            x[i] -= vals[j] * x[idx2[j]];
+            y.values[i] -= vals[j] * y.values[idx2[j]];
         }
-        x[i] \= vals[end-1];
+        y.values[i] /= vals[end-1];
     }
 }
 
-/*void CSCMatrix::fwd_sub(Vector& y, Vector& b)
+void CSCMatrix::fwd_sub(Vector& y, Vector& b)
 {    
     printf("Forward Substitution Not Implemented for these matrix types\n");
 }
 
-**************************************************************
+/**************************************************************
 *****   Backward Substitution (Ux = y)
 **************************************************************
 ***** Solves for the vector x by backward substitution
