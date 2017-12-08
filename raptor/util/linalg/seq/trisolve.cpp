@@ -25,7 +25,7 @@ void COOMatrix::fwd_sub(Vector& y, Vector& b)
     printf("Forward Substitution Not Implemented for these matrix types\n");
 }*/
 
-void CSRMatrix::fwd_sub(Vector& y, Vector& b)
+void CSRMatrix::fwd_sub(std::vector<double>& y, std::vector<double>& b)
 {   
     int start, end;
     y.copy(b); 
