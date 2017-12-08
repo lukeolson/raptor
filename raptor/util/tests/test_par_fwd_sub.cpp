@@ -35,41 +35,39 @@ int main(int argc, char* argv[])
     // Read in lower triangular matrix
     char* fname = "steam1_low.mtx";
     CSRMatrix* A = readMatrix(fname);
-    ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 1);
+    //ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 1);
 
     Vector x(A->n_rows);
     Vector b(A->n_rows);
     b.set_const_value(1.0);
 
-    ParVector x_par(A_par->global_num_cols, A_par->on_proc_num_cols, 
+    A->fwd_sub(x, b);
+
+    double x_norm = x.norm(2);
+    if (rank == 0){
+        printf("Seq norm: %f\n", x_norm);
+
+        Vector x1(A->n_rows);
+	Vector b1(A->n_rows);
+	b1.set_const_value(1.0);
+	A->fwd_sub(x1, b1);
+
+	double x_norm1 = x1.norm(2);
+	printf("Seq norm1: %f\n", x_norm1);
+    }
+
+    /*ParVector x_par(A_par->global_num_cols, A_par->on_proc_num_cols, 
             A_par->partition->first_local_col);
     ParVector b_par(A_par->global_num_rows, A_par->local_num_rows, 
             A_par->partition->first_local_row);
     b_par.set_const_value(1.0);
 
-    A->fwd_sub(x, b);
+    A_par->fwd_sub(x_par, b_par);*/
 
-    A_par->fwd_sub(x_par, b_par);
-
-    compare(x, x_par);
+    //compare(x, x_par);
     
-    // Set x and x_par to same random values
-    for (int i = 0; i < x.size(); i++)
-    {
-        srand(i);
-        b[i] = ((double)rand()) / RAND_MAX;
-    }
-    for (int i = 0; i < b_par.local_n; i++)
-    {
-        srand(i+b_par.first_local);
-        b_par.local[i] = ((double)rand()) / RAND_MAX;
-    }
-    A->fwd_sub(x, b);
-    A_par->fwd_sub(x_par, b_par);
-    compare(x, x_par);
-
     delete A;
-    delete A_par;
+    //delete A_par;
 
     MPI_Finalize();
 }
