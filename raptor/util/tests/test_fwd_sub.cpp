@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
         srand(i+b_par.first_local);
         b_par.local[i] = ((double)rand()) / RAND_MAX;
     }
-    A->fwd_sub(x, b);
+    A->fwd_sub(x.values, b.values);
     A_par->fwd_sub(x_par, b_par);
     compare(x, x_par);
 
