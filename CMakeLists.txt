@@ -4,9 +4,8 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 
 enable_language(CXX)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_BUILD_TYPE Release)
-
 
 include(FeatureSummary)
 
@@ -17,6 +16,7 @@ option(WITH_HYPRE "Add Hypre" OFF)
 option(WITH_MFEM "Add MFEM" OFF)
 option(WITH_AMPI "Using AMPI" OFF)
 option(WITH_MPI "Using MPI" ON)
+option(WITH_MKL "Using MKL" OFF)
 
 add_feature_info(hypre WITH_HYPRE "Hypre preconditioner")
 add_feature_info(mfem WITH_MFEM "MFEM matrix gallery")
@@ -24,11 +24,15 @@ add_feature_info(ampi WITH_AMPI "Compile with AMPI")
 add_feature_info(crayxe CRAYXE "Compile on CrayXE")
 add_feature_info(bgq BGQ "Compile on BGQ")
 add_feature_info(ptscotch WITH_PTSCOTCH "Enable PTScotch Partitioning")
-
+add_feature_info(mkl WITH_MKL "Use MKL for serial matrix operations")
 
 include(options)
 include(testing)
 include(source)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -ftree-vectorize -fopt-info-vec-optimized -ffast-math -mavx2")
+#set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -qopt-report=3 -qopt-report-phase=vec -xCORE-AVX2")
+#set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -Mvect=simd -DPGI")
 
 #add_feature_info(mpi WITH_MPI "Compile with MPI")
 #include(cxx11)
@@ -49,6 +53,7 @@ SET(HYPRE_DIR "" CACHE STRING "Directory of HYPRE")
 SET(METIS_DIR "" CACHE STRING "Directory of metis")
 SET(MFEM_DIR "" CACHE STRING "Directory of mfem")
 SET(PTSCOTCH_DIR "" CACHE STRING "Directory of mfem")
+SET(MKL_DIR "" CACHE STRING "Directory of mkl")
 
 if (CRAYXE)
     set(EXTERNAL_LIBS "")
@@ -78,6 +83,15 @@ else()
 	set(EXTERNAL_LIBS ${LAPACK_LIB} ${BLAS_LIB})
 endif()
 
+if (WITH_MKL)
+    add_definitions ( -DUSING_MKL )
+    find_package(MKL)
+    if (MKL_FOUND)
+        include_directories(${MKL_INCLUDE_DIRS})
+    else()
+        message(FATAL_ERROR "Cannot find MKL.  Try setting MKL_DIR" )
+    endif(MKL_FOUND)
+endif(WITH_MKL)
 
 if (WITH_PTSCOTCH)
     add_definitions ( -DUSING_PTSCOTCH )

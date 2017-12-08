@@ -33,6 +33,16 @@ else ()
         )
 endif()
 
+if (WITH_MKL)
+    set(spmv_SOURCE
+        util/linalg/mkl_spmv.cpp
+        )
+else()
+        set(spmv_SOURCE
+        util/linalg/spmv.cpp
+        )
+endif()
+
 set(linalg_HEADERS
     util/linalg/relax.hpp
     ${par_linalg_HEADERS}
@@ -40,6 +50,7 @@ set(linalg_HEADERS
     PARENT_SCOPE
     )
 set(linalg_SOURCES 
+    ${spmv_SOURCE}
     util/linalg/matmult.cpp
     util/linalg/relax.cpp
     ${par_linalg_SOURCES}

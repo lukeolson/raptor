@@ -26,8 +26,8 @@
 //using namespace raptor;
 int main(int argc, char *argv[])
 {
-
-    MPI_Init(&argc, &argv);
+    int p;
+    MPI_Init_thread(&argc, &argv, MPI_THREAD_SINGLE, &p);
     int rank, num_procs;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
 #endif
     else if (system == 3)
     {
-        const char* file = "../../examples/LFAT5.mtx";
+        const char* file = "../../examples/LFAT5.cb";
         int sym = 1;
         if (argc > 2)
         {
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
                 sym = atoi(argv[3]);
             }
         }
-        A = readParMatrix(file, MPI_COMM_WORLD, 1, sym);
+        A = readParMatrix(file);
     }
 
     if (system != 2)

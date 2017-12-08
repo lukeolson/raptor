@@ -21,7 +21,7 @@ add_library(raptor STATIC ${core_SOURCES} ${core_HEADERS} ${gallery_SOURCES}
     ${multilevel_SOURCES} ${multilevel_HEADERS})
 
 target_link_libraries(raptor ${MFEM_LIBRARIES} ${METIS_LIBRARIES} ${HYPRE_LIBRARIES}
-    ${PTSCOTCH_LIBRARIES} ${EXTERNAL_LIBS} )
+        ${PTSCOTCH_LIBRARIES} ${MKL_LIBRARIES} ${EXTERNAL_LIBS} )
 
 install(TARGETS raptor DESTINATION "lib")
 install(FILES raptor.hpp DESTINATION "include/raptor")

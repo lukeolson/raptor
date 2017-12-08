@@ -4,6 +4,8 @@
 #include "core/matrix.hpp"
 #include "core/vector.hpp"
 
+#include "mkl.h"
+
 using namespace raptor;
 
 void COOMatrix::mult(std::vector<double>& x, std::vector<double>& b)
@@ -62,85 +64,58 @@ void COOMatrix::residual(const std::vector<double>& x, const std::vector<double>
 
 void CSRMatrix::mult(std::vector<double>& x, std::vector<double>& b)
 {
-    for (int i = 0; i < n_rows; i++)
-        b[i] = 0.0;
-    mult_append(x, b);
+    double alpha = 1.0;
+    double beta = 0.0;
+    mkl_dcsrmv("N", &n_rows, &n_cols, &alpha, "G**C", vals.data(), 
+                    idx2.data(), &(idx1[0]), &(idx1[1]),  
+                    x.data(), &beta, b.data());
 }
+
 void CSRMatrix::mult_T(std::vector<double>& x, std::vector<double>& b)
 {
-    for (int i = 0; i < n_cols; i++)
-        b[i] = 0.0;
-
-    mult_append_T(x, b);    
+    double alpha = 1.0;
+    double beta = 0.0;
+    mkl_dcsrmv("T", &n_rows, &n_cols, &alpha, "G**C", vals.data(), 
+                    idx2.data(), &(idx1[0]), &(idx1[1]),  
+                    x.data(), &beta, b.data());
 }
 void CSRMatrix::mult_append(std::vector<double>& x, std::vector<double>& b)
 { 
-    int start, end;
-    for (int i = 0; i < n_rows; i++)
-    {
-        start = idx1[i];
-        end = idx1[i+1];
-        for (int j = start; j < end; j++)
-        {
-            b[i] += vals[j] * x[idx2[j]];
-        }
-    }
+    double alpha = 1.0;
+    double beta = 1.0;
+    mkl_dcsrmv("N", &n_rows, &n_cols, &alpha, "G**C", vals.data(), 
+                    idx2.data(), &(idx1[0]), &(idx1[1]),  
+                    x.data(), &beta, b.data());
 }
 void CSRMatrix::mult_append_T(std::vector<double>& x, std::vector<double>& b)
 {
-    int start, end;
-    for (int i = 0; i < n_rows; i++)
-    {
-        start = idx1[i];
-        end = idx1[i+1];
-        for (int j = start; j < end; j++)
-        {
-            b[idx2[j]] += vals[j] * x[i];
-        }
-    }
+    double alpha = 1.0;
+    double beta = 1.0;
+    mkl_dcsrmv("T", &n_rows, &n_cols, &alpha, "G**C", vals.data(), 
+                    idx2.data(), &(idx1[0]), &(idx1[1]),  
+                    x.data(), &beta, b.data());
 }
 void CSRMatrix::mult_append_neg(std::vector<double>& x, std::vector<double>& b)
 {
-    int start, end;
-    for (int i = 0; i < n_rows; i++)
-    {
-        start = idx1[i];
-        end = idx1[i+1];
-        for (int j = start; j < end; j++)
-        {
-            b[i] -= vals[j] * x[idx2[j]];
-        }
-    }
+    double alpha = -1.0;
+    double beta = 1.0;
+    mkl_dcsrmv("N", &n_rows, &n_cols, &alpha, "G**C", vals.data(), 
+                    idx2.data(), &(idx1[0]), &(idx1[1]),  
+                    x.data(), &beta, b.data());
 }
 void CSRMatrix::mult_append_neg_T(std::vector<double>& x, std::vector<double>& b)
 {
-    int start, end;
-    for (int i = 0; i < n_rows; i++)
-    {
-        start = idx1[i];
-        end = idx1[i+1];
-        for (int j = start; j < end; j++)
-        {
-            b[idx2[j]] -= vals[j] * x[i];
-        }
-    }
+    double alpha = -1.0;
+    double beta = 1.0;
+    mkl_dcsrmv("T", &n_rows, &n_cols, &alpha, "G**C", vals.data(), 
+                    idx2.data(), &(idx1[0]), &(idx1[1]),  
+                    x.data(), &beta, b.data());
 }
 void CSRMatrix::residual(const std::vector<double>& x, const std::vector<double>& b, 
         std::vector<double>& r)
 {
-    for (int i = 0; i < n_rows; i++)
-        r[i] = b[i];
- 
-    int start, end;
-    for (int i = 0; i < n_rows; i++)
-    {
-        start = idx1[i];
-        end = idx1[i+1];
-        for (int j = start; j < end; j++)
-        {
-            r[i] -= vals[j] * x[idx2[j]];
-        }
-    }
+    r.copy(b);
+    mult_neg_append(x, r)
 }
 
 void CSCMatrix::mult(std::vector<double>& x, std::vector<double>& b)

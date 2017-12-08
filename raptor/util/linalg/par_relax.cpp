@@ -27,6 +27,41 @@
  *****    Vector of distant x-values recvd from other processes
  **************************************************************/
 void SOR_forward(ParCSRMatrix* A, ParVector& x, const ParVector& y, 
+        const std::vector<double>& dist_x)
+{
+    int start, end, col;
+    double diag;
+    double row_sum;
+
+    for (int i = 0; i < A->local_num_rows; i++)
+    {
+        row_sum = 0;
+        start = A->on_proc->idx1[i];
+        end = A->on_proc->idx1[i+1];
+        if (A->on_proc->idx2[start] == i)
+        {
+            diag = A->on_proc->vals[start];
+            start++;
+        }        
+        else continue;
+        for (int j = start; j < end; j++)
+        {
+            col = A->on_proc->idx2[j];
+            row_sum += A->on_proc->vals[j] * x[col];
+        }
+
+        start = A->off_proc->idx1[i];
+        end = A->off_proc->idx1[i+1];
+        for (int j = start; j < end; j++)
+        {
+            col = A->off_proc->idx2[j];
+            row_sum += A->off_proc->vals[j] * dist_x[col];
+        }
+
+        x[i] = (y[i] - row_sum) / diag;
+    }
+}
+void SOR_forward(ParCSRMatrix* A, ParVector& x, const ParVector& y, 
         const std::vector<double>& dist_x, double omega)
 {
     int start, end, col;
@@ -62,6 +97,41 @@ void SOR_forward(ParCSRMatrix* A, ParVector& x, const ParVector& y,
     }
 }
 
+void SOR_backward(ParCSRMatrix* A, ParVector& x, const ParVector& y,
+        const std::vector<double>& dist_x)
+{
+    int start, end, col;
+    double diag;
+    double row_sum;
+
+    for (int i = A->local_num_rows - 1; i >= 0; i--)
+    {
+        row_sum = 0;
+        start = A->on_proc->idx1[i];
+        end = A->on_proc->idx1[i+1];
+        if (A->on_proc->idx2[start] == i)
+        {
+            diag = A->on_proc->vals[start];
+            start++;
+        }        
+        else continue;
+        for (int j = start; j < end; j++)
+        {
+            col = A->on_proc->idx2[j];
+            row_sum += A->on_proc->vals[j] * x[col];
+        }
+
+        start = A->off_proc->idx1[i];
+        end = A->off_proc->idx1[i+1];
+        for (int j = start; j < end; j++)
+        {
+            col = A->off_proc->idx2[j];
+            row_sum += A->off_proc->vals[j] * dist_x[col];
+        }
+
+        x[i] = (y[i] - row_sum) / diag;
+    }
+}
 void SOR_backward(ParCSRMatrix* A, ParVector& x, const ParVector& y,
         const std::vector<double>& dist_x, double omega)
 {
@@ -184,7 +254,10 @@ void sor(ParCSRMatrix* A, ParVector& x, ParVector& b, ParVector& tmp,
     for (int iter = 0; iter < num_sweeps; iter++)
     {
         A->comm->communicate(x);
-        SOR_forward(A, x, b, A->comm->get_recv_buffer<double>(), omega);
+	if (fabs(omega-1.0) < 1e-06)
+            SOR_forward(A, x, b, A->comm->get_recv_buffer<double>());
+        else
+            SOR_forward(A, x, b, A->comm->get_recv_buffer<double>(), omega);
     }
 }
 
@@ -202,8 +275,16 @@ void ssor(ParCSRMatrix* A, ParVector& x, ParVector& b, ParVector& tmp,
     for (int iter = 0; iter < num_sweeps; iter++)
     {
         A->comm->communicate(x);
-        SOR_forward(A, x, b, A->comm->get_recv_buffer<double>(), omega);
-        SOR_backward(A, x, b, A->comm->get_recv_buffer<double>(), omega);
+	if (fabs(omega-1.0) < 1e-06)
+        {
+            SOR_forward(A, x, b, A->comm->get_recv_buffer<double>());
+            SOR_backward(A, x, b, A->comm->get_recv_buffer<double>());
+        }
+        else
+        {
+            SOR_forward(A, x, b, A->comm->get_recv_buffer<double>(), omega);
+            SOR_backward(A, x, b, A->comm->get_recv_buffer<double>(), omega);
+        }
     }
 }
 
