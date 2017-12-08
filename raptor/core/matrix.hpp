@@ -800,6 +800,11 @@ namespace raptor
 
     CSRMatrix* subtract(CSRMatrix* B);
 
+    //--------------------------------------------------------------
+    // FWD SUB DEFINITION
+    //--------------------------------------------------------------
+    void fwd_sub(std::vector<double>& y, const std::vector<double>& b)
+
     CSRBoolMatrix* strength(double theta = 0.0);
     CSRMatrix* aggregate();
     CSRMatrix* fit_candidates(data_t* B, data_t* R, int num_candidates, 

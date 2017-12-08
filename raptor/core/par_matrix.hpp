@@ -544,6 +544,11 @@ namespace raptor
             CSRMatrix* recv_off);
   };
 
+    //---------------------------------------
+    // FWD SUB DEFINITION
+    //---------------------------------------
+    void fwd_sub(ParVector& y, ParVector& b);
+
   class ParCSCMatrix : public ParMatrix
   {
   public:

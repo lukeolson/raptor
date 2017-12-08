@@ -10,6 +10,10 @@ add_executable(test_spmv_random test_spmv_random.cpp)
 target_link_libraries(test_spmv_random raptor)
 add_test(RandomSpMVTest ./test_spmv_random)
 
+add_executable(test_fwd_sub test_fwd_sub.cpp)
+target_link_libraries(test_fwd_sub raptor ${MPI_LIBRARIES})
+add_test(FwdSubTest ./test_fwd_sub)
+
 if (WITH_MPI)
     add_executable(test_par_spmv_laplacian test_par_spmv_laplacian.cpp)
     target_link_libraries(test_par_spmv_laplacian raptor)
