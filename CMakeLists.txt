@@ -30,7 +30,7 @@ include(options)
 include(testing)
 include(source)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -ftree-vectorize -fopt-info-vec-optimized -ffast-math -mavx2")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto -ftree-vectorize")
 #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -qopt-report=3 -qopt-report-phase=vec -xCORE-AVX2")
 #set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS}  -Mvect=simd -DPGI")
 

@@ -114,8 +114,12 @@ void CSRMatrix::mult_append_neg_T(std::vector<double>& x, std::vector<double>& b
 void CSRMatrix::residual(const std::vector<double>& x, const std::vector<double>& b, 
         std::vector<double>& r)
 {
-    r.copy(b);
-    mult_neg_append(x, r)
+    std::copy(b.begin(), b.end(), r.begin());
+    double alpha = -1.0;
+    double beta = 1.0;
+    mkl_dcsrmv("N", &n_rows, &n_cols, &alpha, "G**C", vals.data(), 
+                    idx2.data(), &(idx1[0]), &(idx1[1]),  
+                    x.data(), &beta, r.data());
 }
 
 void CSCMatrix::mult(std::vector<double>& x, std::vector<double>& b)
