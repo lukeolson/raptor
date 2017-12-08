@@ -1,14 +1,14 @@
-add_executable(test_spmv_laplacian test_spmv_laplacian.cpp)
-target_link_libraries(test_spmv_laplacian raptor)
-add_test(LaplacianSpMVTest ./test_spmv_laplacian)
+#add_executable(test_spmv_laplacian test_spmv_laplacian.cpp)
+#target_link_libraries(test_spmv_laplacian raptor)
+#add_test(LaplacianSpMVTest ./test_spmv_laplacian)
 
-add_executable(test_spmv_aniso test_spmv_aniso.cpp)
-target_link_libraries(test_spmv_aniso raptor)
-add_test(AnisoSpMVTest ./test_spmv_aniso)
+#add_executable(test_spmv_aniso test_spmv_aniso.cpp)
+#target_link_libraries(test_spmv_aniso raptor)
+#add_test(AnisoSpMVTest ./test_spmv_aniso)
 
-add_executable(test_spmv_random test_spmv_random.cpp)
-target_link_libraries(test_spmv_random raptor)
-add_test(RandomSpMVTest ./test_spmv_random)
+#add_executable(test_spmv_random test_spmv_random.cpp)
+#target_link_libraries(test_spmv_random raptor)
+#add_test(RandomSpMVTest ./test_spmv_random)
 
 add_executable(test_fwd_sub test_fwd_sub.cpp)
 target_link_libraries(test_fwd_sub raptor ${MPI_LIBRARIES})

@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
             A_par->partition->first_local_row);
     b_par.set_const_value(1.0);
 
-    A->fwd_sub(x, b);
+    A->fwd_sub(x.values, b.values);
     A_par->fwd_sub(x_par, b_par);
     compare(x, x_par);
 
