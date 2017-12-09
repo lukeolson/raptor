@@ -29,17 +29,16 @@ void CSRMatrix::fwd_sub(Vector& y, Vector& b)
 {   
     int start, end;
     y.copy(b);
-    y.print(); 
     for (int i = 0; i < n_rows; i++)
     {
         start = idx1[i];
         end = idx1[i+1];
-	printf("%d %d \n", start, end);
-        for (int j=start; j<end; j++)
+        for (int j=start; j<end-1; j++)
         {
             y.values[i] -= vals[j] * y.values[idx2[j]];
         }
         y.values[i] /= vals[end-1];
+	//printf("%f\n", y.values[i]);
 	//y.print();
     }
 }

@@ -41,7 +41,7 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
         // Send local updated portion of y to next rank
         MPI_Send(&(y.local)[0], y.local_n, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD);
 
-	//printf("Rank %d, sends %d \n", rank, y.local_n);
+	printf("Rank %d, sends %d \n", rank, y.local_n);
     }
     // Else receive updated x from previous procs then perform seq fwd sub
     else{
@@ -49,7 +49,7 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
         int recv_cnt = y.local_n * rank + edge;
         Vector off_y(recv_cnt);
 
-	//printf("Rank %d, receives %d \n", rank, recv_cnt);
+	printf("Rank %d, receives %d \n", rank, recv_cnt);
 
         // Receive updated portion of y from previous rank
         MPI_Recv(&(off_y)[0], recv_cnt, MPI_DOUBLE, rank-1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -65,7 +65,7 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
             // Perform seq fwd sub on on_proc with updated local y
             start_on = on_proc->idx1[i];
             end_on = on_proc->idx1[i+1];
-            for (j=start_on; j<end_on; j++){
+            for (j=start_on; j<end_on-1; j++){
                 y.local[i] -= on_proc->vals[j] * y.local[on_proc->idx2[j]];
             }
             y.local[i] /= on_proc->vals[end_on-1];
@@ -76,7 +76,7 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
 
             int send_cnt = recv_cnt + y.local_n;
 
-            //printf("Rank %d sends %d \n", rank, send_cnt);
+            printf("Rank %d sends %d \n", rank, send_cnt);
 
             // Appending local y calculations onto off_y calculations
             off_y.values.insert(off_y.values.end(), y.local.values.begin(), y.local.values.end());

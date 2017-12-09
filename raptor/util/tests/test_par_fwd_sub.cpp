@@ -13,8 +13,8 @@ void compare(Vector& b, ParVector& b_par)
     double b_norm = b.norm(2);
     double b_par_norm = b_par.norm(2);
 
-    printf("Seq norm: %f\n", b_norm);
-    printf("Par norm: %f\n", b_par_norm);
+    //printf("Seq norm: %f\n", b_norm);
+    //printf("Par norm: %f\n", b_par_norm);
 
     assert(fabs(b_norm - b_par_norm) < 1e-06);
 
@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     // Read in lower triangular matrix
     char* fname = "LFAT5_low.mtx";
     CSRMatrix* A = readMatrix(fname);
-    //ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 1);
+    ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 1);
 
     Vector x(A->n_rows);
     Vector b(A->n_rows);
@@ -43,21 +43,26 @@ int main(int argc, char* argv[])
 
     A->fwd_sub(x, b);
 
-    double x_norm = b.norm(2);
-    printf("Seq norm: %f\n", x_norm);
+    double x_norm = x.norm(2);
 
-    /*ParVector x_par(A_par->global_num_cols, A_par->on_proc_num_cols, 
+    ParVector x_par(A_par->global_num_cols, A_par->on_proc_num_cols, 
             A_par->partition->first_local_col);
     ParVector b_par(A_par->global_num_rows, A_par->local_num_rows, 
             A_par->partition->first_local_row);
     b_par.set_const_value(1.0);
 
-    A_par->fwd_sub(x_par, b_par);*/
+    A_par->fwd_sub(x_par, b_par);
+
+    double x_par_norm = x_par.norm(2);
+    if (rank == 0){
+	printf("Seq norm: %f\n", x_norm);
+        printf("Par norm: %f\n", x_par_norm);
+    }
 
     //compare(x, x_par);
     
     delete A;
-    //delete A_par;
+    delete A_par;
 
     MPI_Finalize();
 }
