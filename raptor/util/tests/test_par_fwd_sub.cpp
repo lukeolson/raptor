@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
     // Read in lower triangular matrix
-    char* fname = "steam1_low.mtx";
+    char* fname = "LFAT5_low.mtx";
     CSRMatrix* A = readMatrix(fname);
     //ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 1);
 
@@ -43,18 +43,8 @@ int main(int argc, char* argv[])
 
     A->fwd_sub(x, b);
 
-    double x_norm = x.norm(2);
-    if (rank == 0){
-        printf("Seq norm: %f\n", x_norm);
-
-        Vector x1(A->n_rows);
-	Vector b1(A->n_rows);
-	b1.set_const_value(1.0);
-	A->fwd_sub(x1, b1);
-
-	double x_norm1 = x1.norm(2);
-	printf("Seq norm1: %f\n", x_norm1);
-    }
+    double x_norm = b.norm(2);
+    printf("Seq norm: %f\n", x_norm);
 
     /*ParVector x_par(A_par->global_num_cols, A_par->on_proc_num_cols, 
             A_par->partition->first_local_col);

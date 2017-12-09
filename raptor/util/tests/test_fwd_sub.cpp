@@ -18,8 +18,8 @@ int main(int argc, char* argv[])
 
     A->fwd_sub(x, b);
  
-    double b_norm = b.norm(2);
-    printf("Seq A norm: %f\n", b_norm);
+    double x_norm = x.norm(2);
+    printf("Seq A norm: %f\n", x_norm);
 
     delete A;
 }
