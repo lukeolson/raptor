@@ -12,19 +12,11 @@ int main(int argc, char* argv[])
     char* fname = "LFAT5_low.mtx";
     CSRMatrix* A = readMatrix(fname, 0);
 
-    //A->print();
-
-    /*for (auto i: A->idx1){
-	    printf("%d ", i);
-    }
-    printf("\n");*/
-
     Vector x(A->n_rows);
     Vector b(A->n_rows);
     b.set_const_value(1.0);
 
     A->fwd_sub(x, b);
-
  
     double x_norm = x.norm(2);
     printf("Seq A norm: %f\n", x_norm);

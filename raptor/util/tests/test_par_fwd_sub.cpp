@@ -34,8 +34,8 @@ int main(int argc, char* argv[])
 
     // Read in lower triangular matrix
     char* fname = "LFAT5_low.mtx";
-    CSRMatrix* A = readMatrix(fname);
-    ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 1);
+    CSRMatrix* A = readMatrix(fname, 0);
+    ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 0);
 
     Vector x(A->n_rows);
     Vector b(A->n_rows);
@@ -53,13 +53,7 @@ int main(int argc, char* argv[])
 
     A_par->fwd_sub(x_par, b_par);
 
-    double x_par_norm = x_par.norm(2);
-    if (rank == 0){
-	printf("Seq norm: %f\n", x_norm);
-        printf("Par norm: %f\n", x_par_norm);
-    }
-
-    //compare(x, x_par);
+    compare(x, x_par);
     
     delete A;
     delete A_par;
