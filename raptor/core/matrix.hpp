@@ -224,10 +224,8 @@ namespace raptor
     void RAP(const CSCMatrix& P, CSCMatrix* Ac);
     void RAP(const CSCMatrix& P, CSRMatrix* Ac);
 
-    //--------------------------------------------------------------
-    // FWD SUB DEFINITION
-    //--------------------------------------------------------------
     virtual void fwd_sub(Vector& y, Vector& b) = 0;
+    virtual void print() = 0;
 
     Matrix* subtract(Matrix* B);
 
@@ -507,9 +505,6 @@ namespace raptor
     void mult_append_T(Vector& x, Vector& b);
     void mult_append_neg_T(Vector& x, Vector& b);
 
-    //--------------------------------------------------------------
-    // FWD SUB DEFINITION
-    //--------------------------------------------------------------
     void fwd_sub(Vector& y, Vector& b);
 
     format_t format()
@@ -810,15 +805,12 @@ namespace raptor
 
     CSRMatrix* subtract(CSRMatrix* B);
 
-    //--------------------------------------------------------------
-    // FWD SUB DEFINITION
-    //--------------------------------------------------------------
-    void fwd_sub(Vector& y, Vector& b);
-
     CSRBoolMatrix* strength(double theta = 0.0);
     CSRMatrix* aggregate();
     CSRMatrix* fit_candidates(data_t* B, data_t* R, int num_candidates, 
             double tol = 1e-10);
+
+    void fwd_sub(Vector& y, Vector& b);
 
     format_t format()
     {
@@ -1097,11 +1089,6 @@ namespace raptor
 
     void jacobi(Vector& x, Vector& b, Vector& tmp, double omega = .667);    
 
-    //--------------------------------------------------------------
-    // FWD SUB DEFINITION
-    //--------------------------------------------------------------
-    void fwd_sub(Vector& y, Vector& b);
-
     format_t format()
     {
         return CSC;
@@ -1121,6 +1108,8 @@ namespace raptor
     {
         return vals;
     }
+
+    void fwd_sub(Vector& y, Vector& b);
 
   };
 
@@ -1358,11 +1347,8 @@ namespace raptor
         }
     }
 
-    //--------------------------------------------------------------
-    // FWD SUB DEFINITION
-    //--------------------------------------------------------------
     void fwd_sub(Vector& y, Vector& b){
-	printf("Not implemented for CSRBoolMatrix.\n");
+        printf("Not implemented.\n");
     };
 
     format_t format()
