@@ -24,7 +24,7 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
 
     int i, j, start_off, end_off, start_on, end_on;
 
-    // Call sequential algorithm if a single process
+    //Call sequential algorithm if a single process
     // Else perform fan-in algorithm
     if(num_procs <= 1){
         on_proc->fwd_sub(y.local, b.local);
@@ -37,6 +37,7 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
 	local_stop = local_start + local_num_rows;
 	double temp;
 
+        //printf("Rank: %d\n", rank);
 	for (i=0; i<global_num_rows; i++){ 
 	    
 	    root = i / local_num_rows;
@@ -44,16 +45,18 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
 
 	    end_on = on_proc->idx1[on_proc_i+1];
 
-	    //-------------FIX THIS IF STATEMENT--------------------
-	    // end_on - not correct?
-	    if (local_start >= i && i < local_stop){
-		printf("%d\n", end_on);
+	    if (local_start <= i && i < local_stop){
 		y.local[on_proc_i] /= on_proc->vals[end_on-1];
 		temp = y.local[on_proc_i];
+		//printf("on_proc_i: %d\n", on_proc_i);
+		//printf("Rank: %d, i: %d\n", rank, i);
 	    }
 	    MPI_Bcast(&temp, 1, MPI_DOUBLE, root, MPI_COMM_WORLD);
 	    global_y.values[i] = temp;
-	    //-------------------------------------------------------
+
+            if (rank == 0 ){
+		    printf("Global y [%d]: %f\n", i, temp);
+	    }
 
 	    if (rank > root){
 	        for(local_i=0; local_i<local_num_rows; local_i++){
@@ -88,8 +91,8 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
 			}
 		    }
 		}
-	    } 
-	} 
+	    }
+	}
     }
 }
 

@@ -32,18 +32,20 @@ int main(int argc, char* argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
+    printf("Main rank: %d\n", rank);
+
     // Read in lower triangular matrix
     char* fname = "LFAT5_low.mtx";
-    CSRMatrix* A = readMatrix(fname, 0);
+    //CSRMatrix* A = readMatrix(fname, 0);
     ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 0);
 
-    Vector x(A->n_rows);
-    Vector b(A->n_rows);
-    b.set_const_value(1.0);
+    //Vector x(A->n_rows);
+    //Vector b(A->n_rows);
+    //b.set_const_value(1.0);
 
-    A->fwd_sub(x, b);
+    //A->fwd_sub(x, b);
 
-    double x_norm = x.norm(2);
+    //double x_norm = x.norm(2);
 
     ParVector x_par(A_par->global_num_cols, A_par->on_proc_num_cols, 
             A_par->partition->first_local_col);
@@ -53,9 +55,14 @@ int main(int argc, char* argv[])
 
     A_par->fwd_sub(x_par, b_par);
 
-    compare(x, x_par);
+    double x_par_norm = x_par.norm(2);
+
+    if(rank==0){
+	    printf("Par norm: %f\n", x_par_norm);
+    }
+    //compare(x, x_par);
     
-    delete A;
+    //delete A;
     delete A_par;
 
     MPI_Finalize();
