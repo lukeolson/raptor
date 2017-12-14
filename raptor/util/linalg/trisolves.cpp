@@ -32,7 +32,7 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
     else{
         Vector global_y(global_num_rows);
 
-	int local_start, local_stop, local_i, root, on_proc_i;
+	int local_start, local_stop, local_i, root, on_proc_i, global_i;
         local_start = rank * local_num_rows;
 	local_stop = local_start + local_num_rows;
 	double temp;
@@ -54,19 +54,23 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
 	    MPI_Bcast(&temp, 1, MPI_DOUBLE, root, MPI_COMM_WORLD);
 	    global_y.values[i] = temp;
 
-            if (rank == 0 ){
+            /*if (rank == 0 ){
 		    printf("Global y [%d]: %f\n", i, temp);
-	    }
+	    }*/
 
 	    if (rank > root){
+		//printf("Rank: %d, Global i: %d\n", rank, i);
 	        for(local_i=0; local_i<local_num_rows; local_i++){
 	            start_off = off_proc->idx1[local_i];
 	            end_off = off_proc->idx1[local_i+1];
+		    //printf("Row: %d, Rank: %d, start_off %d, end_off: %d\n", i, rank, start_off, end_off);
 
                     if(i >= off_proc->idx2[start_off]){
 			for (j=start_off; j<end_off; j++){
 	                    // Find col number
 			    if (i == off_proc->idx2[j]){
+				global_i = rank*local_num_rows + local_i;
+				printf("Row: %d, Col: %d\n", global_i, off_proc->idx2[j]);
 			        y.local[local_i] -= off_proc->vals[j] * global_y.values[i];
 				break;
 			    }
@@ -76,9 +80,12 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
 	        }
 	    }
 	    else{
+		//printf("Rank: %d, Global i: %d\n", rank, i);
 	        for(local_i=on_proc_i+1; local_i<local_num_rows; local_i++){
 	            start_on = on_proc->idx1[local_i];
 	            end_on = on_proc->idx1[local_i+1];
+
+		    //printf("Row: %d, Rank: %d, start_on %d, end_on: %d\n", i, rank, start_on, end_on);
 
 		    if(i >= on_proc->idx2[start_on]){
 			for (j=start_on; j<end_on; j++){
