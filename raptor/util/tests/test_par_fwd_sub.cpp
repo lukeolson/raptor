@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     printf("Main rank: %d\n", rank);
 
     // Read in lower triangular matrix
-    char* fname = "LFAT5_low.mtx";
+    char* fname = "LFAT5_sml.mtx";
     //CSRMatrix* A = readMatrix(fname, 0);
     ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 0);
 
