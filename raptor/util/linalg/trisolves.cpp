@@ -22,31 +22,120 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
     // Set the values of y equal to the values of b
     y.copy(b);
 
-    int edge = 0;
-    int part = y.global_n/num_procs;
-    if (part*num_procs != y.global_n){
-        edge = y.local_n - part;
-    }
-    MPI_Bcast(&edge, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    int i, j, start_off, end_off, start_on, end_on;
 
-    //printf("Edge %d\n", edge);
+    // Call sequential algorithm if a single process
+    // Else perform fan-in algorithm
+    if(num_procs <= 1){
+        on_proc->fwd_sub(y.local, b.local);
+    }
+    else{
+        Vector global_y(global_num_rows);
+
+	int local_start, local_stop, local_i, root, on_proc_i;
+        local_start = rank * local_num_rows;
+	local_stop = local_start + local_num_rows;
+	double temp;
+
+	for (i=0; i<global_num_rows; i++){ 
+	    
+	    root = i / local_num_rows;
+            on_proc_i = i % local_num_rows;
+
+	    end_on = on_proc->idx1[on_proc_i+1];
+
+	    //-------------FIX THIS IF STATEMENT--------------------
+	    // end_on - not correct?
+	    if (local_start >= i && i < local_stop){
+		printf("%d\n", end_on);
+		y.local[on_proc_i] /= on_proc->vals[end_on-1];
+		temp = y.local[on_proc_i];
+	    }
+	    MPI_Bcast(&temp, 1, MPI_DOUBLE, root, MPI_COMM_WORLD);
+	    global_y.values[i] = temp;
+	    //-------------------------------------------------------
+
+	    if (rank > root){
+	        for(local_i=0; local_i<local_num_rows; local_i++){
+	            start_off = off_proc->idx1[local_i];
+	            end_off = off_proc->idx1[local_i+1];
+
+                    if(i >= off_proc->idx2[start_off]){
+			for (j=start_off; j<end_off; j++){
+	                    // Find col number
+			    if (i == off_proc->idx2[j]){
+			        y.local[local_i] -= off_proc->vals[j] * global_y.values[i];
+				break;
+			    }
+			    if (i > off_proc->idx2[j]) break;
+			}
+	            }
+	        }
+	    }
+	    else{
+	        for(local_i=on_proc_i+1; local_i<local_num_rows; local_i++){
+	            start_on = on_proc->idx1[local_i];
+	            end_on = on_proc->idx1[local_i+1];
+
+		    if(i >= on_proc->idx2[start_on]){
+			for (j=start_on; j<end_on; j++){
+			    // Find col number
+			    if (i == on_proc->idx2[j]){
+		                y.local[local_i] -= on_proc->vals[j] * global_y.values[j];
+				break;
+			    }
+			    if (i > on_proc->idx2[j]) break;
+			}
+		    }
+		}
+	    } 
+	} 
+    }
+}
+
+
+/*void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
+{
+    // Check that communication package has been initialized
+    if (comm == NULL){
+        comm = new ParComm(partition, off_proc_column_map);
+    }
+
+    int rank, num_procs;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+
+    // Set the values of y equal to the values of b
+    y.copy(b);
 
     int i, j, start_off, end_off, start_on, end_on;
     // If rank==0, perform seq fwd sub
     if (rank == 0){
 
         // Call seq fwd_sub method
-        on_proc->fwd_sub(y.local, b.local);
+        //on_proc->fwd_sub(y.local, b.local);
 
-        // Send local updated portion of y to next rank
-        MPI_Send(&(y.local)[0], y.local_n, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD);
+	y.local.copy(b.local);
+	for(int i=0; i<on_proc->n_rows; i++){
+	    start_on = on_proc->idx1[i];
+	    end_on = on_proc->idx1[i+1];
+	    for(int j=start_on; j<end_on-1; j++){
+	        y.local[i] -= on_proc->vals[j] * y.local[on_proc->idx2[j]];	    
+	    }
+	    y.local[i] /= on_proc->vals[end_on-1];
+	}
 
-	printf("Rank %d, sends %d \n", rank, y.local_n);
+        // Send local updated portion of y to next rank if there's more than 1 process
+	if ( num_procs > 1){
+            MPI_Send(&(y.local)[0], y.local_n, MPI_DOUBLE, rank+1, 1, MPI_COMM_WORLD);
+	    printf("Rank %d, sends %d \n", rank, y.local_n);
+	}
     }
     // Else receive updated x from previous procs then perform seq fwd sub
     else{
 
-        int recv_cnt = y.local_n * rank + edge;
+        int recv_cnt = y.local_n * rank;
         Vector off_y(recv_cnt);
 
 	printf("Rank %d, receives %d \n", rank, recv_cnt);
@@ -86,4 +175,4 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
         }
     }
    
-}
+}*/
