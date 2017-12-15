@@ -226,6 +226,7 @@ namespace raptor
 
     virtual void fwd_sub_fanin(Vector& y, Vector& b) = 0;
     virtual void fwd_sub_fanout(Vector& y, Vector& b) = 0;
+    virtual void back_sub(Vector& y, Vector& b) = 0;
 
     virtual void print() = 0;
 
@@ -509,6 +510,7 @@ namespace raptor
 
     void fwd_sub_fanin(Vector& y, Vector& b);
     void fwd_sub_fanout(Vector& y, Vector& b);
+    void back_sub(Vector& y, Vector& b);
 
     format_t format()
     {
@@ -815,6 +817,7 @@ namespace raptor
 
     void fwd_sub_fanin(Vector& y, Vector& b);
     void fwd_sub_fanout(Vector& y, Vector& b);
+    void back_sub(Vector& y, Vector& b);
 
     format_t format()
     {
@@ -1115,6 +1118,7 @@ namespace raptor
 
     void fwd_sub_fanin(Vector& y, Vector& b);
     void fwd_sub_fanout(Vector& y, Vector& b);
+    void back_sub(Vector& y, Vector& b);
 
   };
 
@@ -1357,6 +1361,10 @@ namespace raptor
     };
 
     void fwd_sub_fanout(Vector& y, Vector& b){
+        printf("Not implemented.\n");
+    };
+    
+    void back_sub(Vector& y, Vector& b){
         printf("Not implemented.\n");
     };
 

@@ -77,16 +77,51 @@ void CSCMatrix::fwd_sub_fanout(Vector& y, Vector& b)
 *****    Array in which to place the solution
 ***** b : T*
 *****    Array containing vector data
-**************************************************************
+**************************************************************/
 void COOMatrix::back_sub(Vector& x, Vector& b)
 {    
     printf("Backward Substitution Not Implemented for these matrix types\n");
 }
+
 void CSRMatrix::back_sub(Vector& x, Vector& b)
 {    
-    printf("Backward Substitution Not Implemented for these matrix types\n");
+    //printf("Backward Substitution Not Implemented for these matrix types\n");
+    int start_i, check_i, start;
+    x.copy(b);
+    std::vector<int> col_ptr;
+    for (int k=0; k<n_rows; k++){
+	if (idx1[k] < idx1[k+1]){
+            col_ptr.push_back(idx1[k+1]-1);
+	}
+	else{
+	    col_ptr.push_back(-1);
+	}
+    }
+
+    for (int j = n_rows-1; j >=0; j--)
+    {
+	start = idx1[j];
+	x.values[j] /= vals[start];
+
+        for (int i=0; i<j; i++)
+        {
+	    start_i = idx1[i];
+	    check_i = col_ptr[i];
+	    if (check_i != -1){
+		if (j == idx2[check_i]){
+		    x.values[i] -= vals[check_i] * x.values[j];
+		    if (check_i-1 > start_i){
+			col_ptr[i]--;
+		    }
+		}
+	    }
+        }
+	//printf("%f\n", y.values[i]);
+	//y.print();
+    }
 }
+
 void CSCMatrix::back_sub(Vector& x, Vector& b)
 {    
     printf("Backward Substitution Not Implemented for these matrix types\n");
-}*/
+}
