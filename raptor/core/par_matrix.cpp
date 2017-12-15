@@ -135,7 +135,7 @@ void ParMatrix::finalize(bool create_comm)
 
     // Condense columns in off_proc, storing global
     // columns as 0-num_cols, and store mapping
-    condense_off_proc();
+    /*condense_off_proc();
 
     off_proc->resize(local_num_rows, off_proc_num_cols);
 
@@ -144,7 +144,7 @@ void ParMatrix::finalize(bool create_comm)
     if (create_comm)
         comm = new ParComm(partition, off_proc_column_map);
     else
-        comm = new ParComm(partition);
+        comm = new ParComm(partition);*/
 }
 
 int* ParMatrix::map_partition_to_local()

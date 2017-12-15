@@ -31,11 +31,9 @@ int main(int argc, char* argv[])
     int rank, num_procs;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
-
-    printf("Main rank: %d\n", rank);
-
+   
     // Read in lower triangular matrix
-    char* fname = "LFAT5_sml.mtx";
+    char* fname = "LFAT5_sml2.mtx";
     //CSRMatrix* A = readMatrix(fname, 0);
     ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 0);
 

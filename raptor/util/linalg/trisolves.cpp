@@ -10,11 +10,6 @@ using namespace raptor;
 
 void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
 {
-    // Check that communication package has been initialized
-    if (comm == NULL){
-        comm = new ParComm(partition, off_proc_column_map);
-    }
-
     int rank, num_procs;
 
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -35,7 +30,7 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
 	// Holds idx of first non-updated col in on process rows
 	std::vector<int> local_on_ptrs(on_proc->n_rows); 
 	// Holds idx of first non-updated col in off process rows
-	std::vector<int> local_off_ptrs(off_proc->n_rows); 
+	std::vector<int> local_off_ptrs;
 
 	int local_start, local_stop, local_i, root, on_proc_i, global_i, check_indx, global_col;
         local_start = rank * local_num_rows;
@@ -44,99 +39,78 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
 
 	// Populate pointer arrays to hold current index of non-zero non-updated col in idx2 array
         for(local_i=0; local_i<on_proc->n_rows; local_i++){
-		local_on_ptrs[local_i] = on_proc->idx2[on_proc->idx1[local_i]];
-		//printf("On row: %d, First col: %d\n", local_i, local_on_ptrs[local_i]);
+		if(on_proc->idx1[local_i] < on_proc->idx1[local_i+1]){
+		    local_on_ptrs[local_i] = on_proc->idx1[local_i];
+		}
+		else{ 
+		    local_on_ptrs[local_i] = -1;
+		}
 	}
-        printf("\n\n");
-	for(local_i=0; local_i<off_proc->n_rows; local_i++){
-		local_off_ptrs[local_i] = off_proc->idx2[off_proc->idx1[local_i]];
-		//printf("Off row: %d, First col: %d\n", local_i, local_off_ptrs[local_i]);
+	if(rank != 0){
+	    for(local_i=0; local_i<off_proc->n_rows; local_i++){
+		if(off_proc->idx1[local_i] < off_proc->idx1[local_i+1]){
+		    local_off_ptrs.push_back(off_proc->idx1[local_i]);
+		}
+		else{
+		    local_off_ptrs.push_back(-1);
+		}
+	    }
 	}
 
 	for (i=0; i<global_num_rows; i++){ 
-	    
-	    root = i / local_num_rows;
-            on_proc_i = i % local_num_rows;
 
-	    end_on = on_proc->idx1[on_proc_i+1]; // Gives diagonal element for division
+		root = i / local_num_rows;
+		on_proc_i = i % local_num_rows;
 
-	    if (local_start <= i && i < local_stop){
-		y.local[on_proc_i] /= on_proc->vals[end_on-1];
-		temp = y.local[on_proc_i];
-	    }
-	    MPI_Bcast(&temp, 1, MPI_DOUBLE, root, MPI_COMM_WORLD);
-	    global_y.values[i] = temp;
-	    
-	    if (rank == 0){
-		    global_y.print();
-	    }
+		end_on = on_proc->idx1[on_proc_i+1]; // Gives diagonal element for division
 
-            /*if(rank == 0){
-	        for (auto k: local_on_ptrs){
-	            printf("rank: %d, %d\n", rank, k);
-	        }
-	    }*/
-
-
-	    if (rank > root){
-	        for(local_i=0; local_i<local_num_rows; local_i++){
-		    //start_off = off_proc->idx1[local_i];
-	            end_off = off_proc->idx1[local_i+1];
- 
-
-		    check_indx = local_off_ptrs[local_i];
-		    printf("Rank: %d, check_indx: %d, local_i: %d\n", rank, check_indx, local_i);
-                    if(i == off_proc->idx2[check_indx]){
-		        global_i = rank*local_num_rows + local_i;
-		        //printf("Rank: %d, Row: %d, Col: %d, local_i %d\n", rank, global_i, i, local_i);
-			y.local[local_i] -= off_proc->vals[check_indx] * global_y.values[i];
-			if (off_proc->idx2[check_indx+1] < end_off){
-			    local_off_ptrs[local_i] = off_proc->idx2[check_indx+1];
-		        }
-		    }
-
-                    /*if(i >= off_proc->idx2[start_off]){
-			for (j=start_off; j<end_off; j++){
-	                    // Find col number
-			    if (i == off_proc->idx2[j]){
-				global_i = rank*local_num_rows + local_i;
-			        y.local[local_i] -= off_proc->vals[j] * global_y.values[i];
-				break;
-			    }
-			    if (i > off_proc->idx2[j]) break;
-			}
-	            }*/
-	        }
-	    }
-	    else{
-	        for(local_i=on_proc_i+1; local_i<local_num_rows; local_i++){
-	            //start_on = on_proc->idx1[local_i];
-	            end_on = on_proc->idx1[local_i+1];
-
-		    check_indx = local_on_ptrs[local_i];
-		    global_col = off_proc->n_cols + on_proc->idx2[check_indx];
-		    //printf("Rank: %d, check_indx: %d, local_i: %d\n", rank, check_indx, local_i);
-                    if(i == global_col){
-		        global_i = rank*local_num_rows + local_i;
-		        //printf("Rank: %d, Row: %d, Col: %d, local_i %d\n", rank, global_i, i, local_i);
-			y.local[local_i] -= on_proc->vals[check_indx] * global_y.values[i];
-			if (on_proc->idx2[check_indx+1] < end_on){
-			    local_on_ptrs[local_i] = on_proc->idx2[check_indx+1];
-		        }
-		    }
-
-		    /*if(i >= on_proc->idx2[start_on]){
-			for (j=start_on; j<end_on; j++){
-			    // Find col number
-			    if (i == on_proc->idx2[j]){
-		                y.local[local_i] -= on_proc->vals[j] * global_y.values[j];
-				break;
-			    }
-			    if (i > on_proc->idx2[j]) break;
-			}
-		    }*/
+		if (local_start <= i && i < local_stop){
+			y.local[on_proc_i] /= on_proc->vals[end_on-1];
+			temp = y.local[on_proc_i];
 		}
-	    }
+		MPI_Bcast(&temp, 1, MPI_DOUBLE, root, MPI_COMM_WORLD);
+		global_y.values[i] = temp;
+
+		if (rank > root){
+			for(local_i=0; local_i<local_num_rows; local_i++){
+				end_off = off_proc->idx1[local_i+1];
+
+				check_indx = local_off_ptrs[local_i];
+				if(check_indx != -1){
+					if(i == off_proc->idx2[check_indx]){
+						global_i = rank*local_num_rows + local_i;
+						y.local[local_i] -= off_proc->vals[check_indx] * global_y.values[i];
+						printf("Updated: [%d][%d], local_i: %d, check_indx: %d\n", global_i, off_proc->idx2[check_indx], local_i, check_indx);
+						if (check_indx+1 < end_off){
+							local_off_ptrs[local_i]++;
+						}
+					}
+				}
+			}
+		}
+		else{
+			for(local_i=on_proc_i+1; local_i<local_num_rows; local_i++){
+				end_on = on_proc->idx1[local_i+1];
+
+				check_indx = local_on_ptrs[local_i];
+				if( rank != 0){
+					global_col = local_num_rows * rank + on_proc->idx2[check_indx];
+				}
+				else{
+					global_col = on_proc->idx2[check_indx];
+				}
+				if(check_indx != -1){
+					if(i == global_col){
+						global_i = rank*local_num_rows + local_i;
+						y.local[local_i] -= on_proc->vals[check_indx] * global_y.values[i];
+						printf("Updated: [%d][%d], local_i: %d\n", global_i, global_col, local_i);
+						if (check_indx+1 < end_on){
+							local_on_ptrs[local_i]++;
+						}
+					}
+				}
+			}
+		}
 	}
     }
 }
