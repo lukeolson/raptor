@@ -3,6 +3,7 @@
 #include "core/types.hpp"
 #include "core/matrix.hpp"
 #include "core/vector.hpp"
+#include <vector>
 
 using namespace raptor;
 
@@ -20,12 +21,12 @@ using namespace raptor;
 ***** b : T*
 *****    Array containing vector data 
 **************************************************************/
-void COOMatrix::fwd_sub(Vector& y, Vector& b)
+void COOMatrix::fwd_sub_fanin(Vector& y, Vector& b)
 {    
     printf("Forward Substitution Not Implemented for these matrix types\n");
 }
 
-void CSRMatrix::fwd_sub(Vector& y, Vector& b)
+void CSRMatrix::fwd_sub_fanin(Vector& y, Vector& b)
 {   
     int start, end;
     y.copy(b);
@@ -43,11 +44,26 @@ void CSRMatrix::fwd_sub(Vector& y, Vector& b)
     }
 }
 
-void CSCMatrix::fwd_sub(Vector& y, Vector& b)
+void CSCMatrix::fwd_sub_fanin(Vector& y, Vector& b)
 {    
     printf("Forward Substitution Not Implemented for these matrix types\n");
 }
 
+void COOMatrix::fwd_sub_fanout(Vector& y, Vector& b)
+{    
+    printf("Forward Substitution Not Implemented for these matrix types\n");
+}
+
+// UPDATE THIS TO HAVE THE ALGORITHM FROM TEST_MAT.PY
+void CSRMatrix::fwd_sub_fanout(Vector& y, Vector& b)
+{   
+    printf("Forward Substitution Not Implemented for these matrix types\n");
+}
+
+void CSCMatrix::fwd_sub_fanout(Vector& y, Vector& b)
+{    
+    printf("Forward Substitution Not Implemented for these matrix types\n");
+}
 /**************************************************************
 *****   Backward Substitution (Ux = y)
 **************************************************************

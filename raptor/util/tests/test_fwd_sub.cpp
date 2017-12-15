@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
     Vector b(A->n_rows);
     b.set_const_value(1.0);
 
-    A->fwd_sub(x, b);
+    A->fwd_sub_fanin(x, b);
  
     double x_norm = x.norm(2);
     printf("Seq A norm: %f\n", x_norm);

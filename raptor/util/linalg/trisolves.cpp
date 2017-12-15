@@ -23,7 +23,7 @@ void ParCSRMatrix::fwd_sub(ParVector& y, ParVector& b)
     //Call sequential algorithm if a single process
     // Else perform fan-in algorithm
     if(num_procs <= 1){
-        on_proc->fwd_sub(y.local, b.local);
+        on_proc->fwd_sub_fanin(y.local, b.local);
     }
     else{
         Vector global_y(global_num_rows); // Global solution values - updated by everyone
