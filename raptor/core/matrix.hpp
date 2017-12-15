@@ -224,7 +224,9 @@ namespace raptor
     void RAP(const CSCMatrix& P, CSCMatrix* Ac);
     void RAP(const CSCMatrix& P, CSRMatrix* Ac);
 
-    virtual void fwd_sub(Vector& y, Vector& b) = 0;
+    virtual void fwd_sub_fanin(Vector& y, Vector& b) = 0;
+    virtual void fwd_sub_fanout(Vector& y, Vector& b) = 0;
+
     virtual void print() = 0;
 
     Matrix* subtract(Matrix* B);
@@ -505,7 +507,8 @@ namespace raptor
     void mult_append_T(Vector& x, Vector& b);
     void mult_append_neg_T(Vector& x, Vector& b);
 
-    void fwd_sub(Vector& y, Vector& b);
+    void fwd_sub_fanin(Vector& y, Vector& b);
+    void fwd_sub_fanout(Vector& y, Vector& b);
 
     format_t format()
     {
@@ -810,7 +813,8 @@ namespace raptor
     CSRMatrix* fit_candidates(data_t* B, data_t* R, int num_candidates, 
             double tol = 1e-10);
 
-    void fwd_sub(Vector& y, Vector& b);
+    void fwd_sub_fanin(Vector& y, Vector& b);
+    void fwd_sub_fanout(Vector& y, Vector& b);
 
     format_t format()
     {
@@ -1109,7 +1113,8 @@ namespace raptor
         return vals;
     }
 
-    void fwd_sub(Vector& y, Vector& b);
+    void fwd_sub_fanin(Vector& y, Vector& b);
+    void fwd_sub_fanout(Vector& y, Vector& b);
 
   };
 
@@ -1347,7 +1352,11 @@ namespace raptor
         }
     }
 
-    void fwd_sub(Vector& y, Vector& b){
+    void fwd_sub_fanin(Vector& y, Vector& b){
+        printf("Not implemented.\n");
+    };
+
+    void fwd_sub_fanout(Vector& y, Vector& b){
         printf("Not implemented.\n");
     };
 
