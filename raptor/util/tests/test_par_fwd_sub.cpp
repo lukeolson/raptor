@@ -33,7 +33,17 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
    
     // Read in lower triangular matrix
-    char* fname = "LFAT5_sml2.mtx";
+    //char* fname = "LFAT5_sml2.mtx";
+	char* fname;
+	
+	if(argc >1){
+		fname = argv[1];
+	}
+
+	if(argc <=1){
+		printf("Input the matrix file name\n");
+	}
+
     //CSRMatrix* A = readMatrix(fname, 0);
     ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 0);
 	double t1;

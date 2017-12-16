@@ -15,7 +15,18 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
   
     // Read in lower triangular matrix
-    char* fname = "LFAT5_low.mtx";
+    //char* fname = "LFAT5_low.mtx";
+	char* fname;
+	
+	if(argc > 1){
+		fname = argv[1];
+	}
+
+	if(argc <= 1){
+		printf("Input the matrix file name\n");
+		exit(-1);
+	}
+
     CSRMatrix* A = readMatrix(fname, 0);
 	double t1;
 
