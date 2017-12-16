@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
     char* fname = "LFAT5_sml2.mtx";
     //CSRMatrix* A = readMatrix(fname, 0);
     ParCSRMatrix* A_par = readParMatrix(fname, MPI_COMM_WORLD, 1, 0);
-
+	double t1;
     //Vector x(A->n_rows);
     //Vector b(A->n_rows);
     //b.set_const_value(1.0);
@@ -51,12 +51,16 @@ int main(int argc, char* argv[])
             A_par->partition->first_local_row);
     b_par.set_const_value(1.0);
 
+	t1 = MPI_Wtime();
     A_par->fwd_sub(x_par, b_par);
+	t1 = MPI_Wtime() - t1;
 
     double x_par_norm = x_par.norm(2);
 
     if(rank==0){
+		printf("Num Procs = %d\n", num_procs);
 	    printf("Par norm: %f\n", x_par_norm);
+		printf("Parallel time = %f\n",t1);
     }
     //compare(x, x_par);
     
