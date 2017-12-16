@@ -65,11 +65,11 @@ int main(int argc, char* argv[])
     A_par->fwd_sub(x_par, b_par);
 	t1 = MPI_Wtime() - t1;
 
-    double x_par_norm = x_par.norm(2);
+//    double x_par_norm = x_par.norm(2);
 
     if(rank==0){
 		printf("Num Procs = %d\n", num_procs);
-	    printf("Par norm: %f\n", x_par_norm);
+//	    printf("Par norm: %f\n", x_par_norm);
 		printf("Parallel time = %f\n",t1);
     }
     //compare(x, x_par);
