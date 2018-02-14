@@ -1,7 +1,6 @@
 #include <iostream>
 #include <math.h>
 #include "core/matrix.hpp"
-#include "mmio.h"
 #include "PCG_ILU.hpp"
 #include "test_ILU_shared.hpp"
 #include <omp.h>
@@ -12,6 +11,7 @@
 #include <chrono>
 #include "systimer.h"
 #include "../examples/clear_cache.hpp"
+#include "gallery/matrix_IO.hpp"
 
 #define MIN(a,b)           ((a)<(b)?(a):(b))
 
@@ -84,11 +84,11 @@ int main (int argc, char *argv[])
 	//int cache_len = 10000;
 	//double* cache_array = new double[cache_len];
 
-	COOMatrix * mat = read_matrix(filename);
+	//COOMatrix * mat = read_matrix(filename);
 	//COOMatrix *mat = read_matrix2(filename);
 
 	//Change A to CSR
-	CSRMatrix* Acsr = new CSRMatrix(mat);
+	CSRMatrix* Acsr = readMatrix(filename,1);
 
 	//Sort matrix by row
 	Acsr->sort();
@@ -104,7 +104,7 @@ int main (int argc, char *argv[])
 
 	//Initial guess for U factor
 	//COOMatrix* L = new COOMatrix(mat->n_rows,mat->n_cols);
-	COOMatrix* U = new COOMatrix(mat->n_rows,mat->n_cols);
+	COOMatrix* U = new COOMatrix(Acoo->n_rows,Acoo->n_cols);
 
 	initial_guess_U(Acoo, U);	
 
@@ -230,7 +230,7 @@ int main (int argc, char *argv[])
 	MPI_Win_sync(sm_winT2);
 	MPI_Win_sync(sm_winT3);
 	MPI_Win_sync(sm_winT4);
-	//MPI_Barrier(sm_comm);
+	MPI_Barrier(sm_comm);
 
 
 	//Philipp timing position
@@ -248,7 +248,7 @@ int main (int argc, char *argv[])
 		//call icc
 		icc_sweep(U_colptr_shared, U_indices_shared, aij_U_shared, U_data_shared, U_backup_shared, mystart, myend);
 		MPI_Win_sync(sm_winT3);
-		//MPI_Barrier(sm_comm);	 
+		MPI_Barrier(sm_comm);	 
 	}	
 
 	//Philipp time stopping position
@@ -290,11 +290,11 @@ int main (int argc, char *argv[])
 	///////////////////////////////////////////////////////////////////////////////////
 
 	//Initialize true solution
-	std::vector<double> x_true(mat->n_rows);
+	std::vector<double> x_true(Acoo->n_rows);
 	x_true.assign(x_true.size(), 1.0);
 
 	//Get rhs
-	std::vector<double> b = matrix_vector_product(A_rowptr, A_indices, A_data, x_true, mat->n_rows);
+	std::vector<double> b = matrix_vector_product(A_rowptr, A_indices, A_data, x_true, Acoo->n_rows);
 
 	/*
 	   std::cout << "b =" << " "; 
@@ -311,18 +311,18 @@ int main (int argc, char *argv[])
 	   */	
 
 	//Initialize initial guess for PCG	
-	std::vector<double> x0(mat->n_rows);
+	std::vector<double> x0(Acoo->n_rows);
 	x0.assign(x0.size(), 0.0);
 
 	//Set tolarance and max iterations for PCG	
 	double tol = 0.000001;
-	int max_iter = 2 * mat->n_rows;
+	int max_iter = 2 * Acoo->n_rows;
 
 	elapsed_time = 0;
 	elapsed_time = -MPI_Wtime();
 
 	//Call PCG to solve 
-	int numIter = PCG_UU(x0, b, A_rowptr, A_indices, A_data, U_colptr,U_indices, U_data, max_iter, tol, mat->n_rows);
+	int numIter = PCG_UU(x0, b, A_rowptr, A_indices, A_data, U_colptr,U_indices, U_data, max_iter, tol, Acoo->n_rows);
 
 	elapsed_time += MPI_Wtime();
 
@@ -343,7 +343,7 @@ int main (int argc, char *argv[])
 	//////////////////////////////////////////////////////////////////////////////////
 
 }
-
+/*
 COOMatrix* read_matrix(const char * filename){
 	FILE * f; 
 	int ret_code;
@@ -421,7 +421,7 @@ COOMatrix* read_matrix2(const char * filename){
 
 	return mat;
 }
-
+*/
 
 
 void diagonal_scaling(COOMatrix * mat){

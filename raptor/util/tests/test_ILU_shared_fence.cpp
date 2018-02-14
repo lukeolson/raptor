@@ -1,7 +1,6 @@
 #include <iostream>
 #include <math.h>
 #include "core/matrix.hpp"
-#include "mmio.h"
 #include "PCG_ILU.hpp"
 #include "test_ILU_shared.hpp"
 #include <omp.h>

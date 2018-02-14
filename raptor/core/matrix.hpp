@@ -214,6 +214,8 @@ namespace raptor
     virtual void residual(const std::vector<double>& x, const std::vector<double>& b,
             std::vector<double>& r) = 0;
 
+	virtual void diag_scaling(int symmetric) = 0;
+
     CSRMatrix* mult(const CSRMatrix* B){}
     CSRMatrix* mult(const CSCMatrix* B){}
     CSRMatrix* mult(const COOMatrix* B){}
@@ -501,6 +503,8 @@ namespace raptor
     void mult_append_neg(Vector& x, Vector& b);
     void mult_append_T(Vector& x, Vector& b);
     void mult_append_neg_T(Vector& x, Vector& b);
+
+	void diag_scaling(int symmetric);
 
     format_t format()
     {
@@ -805,6 +809,9 @@ namespace raptor
     CSRMatrix* fit_candidates(data_t* B, data_t* R, int num_candidates, 
             double tol = 1e-10);
 
+
+	void diag_scaling(int symmetric);
+
     format_t format()
     {
         return CSR;
@@ -1082,7 +1089,10 @@ namespace raptor
 
     void jacobi(Vector& x, Vector& b, Vector& tmp, double omega = .667);    
 
-    format_t format()
+    
+	void diag_scaling(int symmetric);
+	
+	format_t format()
     {
         return CSC;
     }
@@ -1337,6 +1347,8 @@ namespace raptor
             }
         }
     }
+
+	void diag_scaling(int symmetric);
 
     format_t format()
     {

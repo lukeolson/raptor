@@ -27,7 +27,7 @@ endmacro()
 
 macro(enable_cxx11)
     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "PGI")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fopenmp -g")
       set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -fopenmp")
       set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11 -fopenmp")
     endif(NOT CMAKE_CXX_COMPILER_ID STREQUAL "PGI")
