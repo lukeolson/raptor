@@ -1637,8 +1637,8 @@ namespace raptor
             int proc, start, end;
             int idx, new_idx;
             
-            int new_idx_L;
-            int new_idx_R;
+            //int new_idx_L;
+            //int new_idx_R;
 
             if (tap_comm->local_S_par_comm)
             {
@@ -2191,7 +2191,7 @@ namespace raptor
 
             // Add values from L_recv and R_recv to appropriate positions in 
             // Vector recv
-            int idx, new_idx;
+            int idx; //, new_idx;
             int R_recv_size = local_R_par_comm->recv_data->size_msgs;
             int L_recv_size = local_L_par_comm->recv_data->size_msgs;
             for (int i = 0; i < R_recv_size; i++)
@@ -2269,7 +2269,7 @@ namespace raptor
         template<typename T>
         void initialize_T(const T* values)
         {
-            int idx;
+            //int idx;
 
             // Messages with origin and final destination on node
             local_L_par_comm->communicate_T(values);
@@ -2414,12 +2414,12 @@ namespace raptor
                 const int* recv_compares,
                 std::function<bool(int)> compare_func = {})
         {
-            int start, end;
-            int idx, new_idx;
-            int proc, size;
-            int n_sends, n_recvs;
-            int ctr;
-            bool send_msg;
+            //int start, end;
+            int idx; //, new_idx;
+            //int proc, size;
+            //int n_sends, n_recvs;
+            //int ctr;
+            //bool send_msg;
 
             std::vector<int> global_send_compares;
             std::vector<int> global_recv_compares;
@@ -2497,7 +2497,7 @@ namespace raptor
                 std::function<bool(int)> compare_func = {},
                 std::function<U(U, T)> result_func = {})
         {
-            int idx, new_idx;
+            int idx; //, new_idx;
 
             std::vector<T> L_sendbuf;
             std::vector<T> R_sendbuf;

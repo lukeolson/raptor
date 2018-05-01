@@ -63,7 +63,7 @@ void CSCMatrix::print()
 }
 void BSRMatrix::print()
 {
-    int col, start, end;
+    int start, end; //col, 
 
     for (int i = 0; i < n_rows/b_rows; i++)
     {

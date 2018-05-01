@@ -249,7 +249,7 @@ CSRMatrix* communication_helper(std::vector<int>& rowptr,
         CommData* send_comm, CommData* recv_comm, int key, MPI_Comm mpi_comm)
 {
     int start, end, proc;
-    int ctr, prev_ctr, size;
+    int ctr, size;//prev_ctr
     int row, row_start, row_end;
     int count, row_count, row_size;
 
@@ -489,7 +489,7 @@ CSRMatrix* ParComm::communicate_T(std::vector<int>& rowptr,
 CSRMatrix* TAPComm::communicate(std::vector<int>& rowptr, 
         std::vector<int>& col_indices, std::vector<double>& values)
 {   
-    int ctr, idx, row;
+    int row; //ctr, idx, 
     int start, end;
 
     CSRMatrix* L_mat = local_L_par_comm->communicate(rowptr, col_indices,
@@ -579,10 +579,10 @@ CSRMatrix* TAPComm::communicate_T(std::vector<int>& rowptr,
         std::vector<int>& col_indices, std::vector<double>& values,
         int n_result_rows)
 {   
-    int n_rows = rowptr.size() - 1;
-    int idx, ptr;
-    int start, end, row;
-    int ctr, size;
+    //int n_rows = rowptr.size() - 1;
+    int idx; //, ptr;
+    int row; //start, end, 
+    //int ctr, size;
     int row_start, row_end, row_size;
 
     CSRMatrix* L_mat = communication_helper(rowptr, col_indices, 

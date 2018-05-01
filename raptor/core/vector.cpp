@@ -71,9 +71,19 @@ void Vector::axpy(Vector& x, data_t alpha)
 **************************************************************/
 void Vector::copy(const Vector& y)
 {
+/*
     num_values = y.num_values;
     values.resize(num_values);
     std::copy(y.values.begin(), y.values.end(), values.begin());
+*/
+    num_values = y.num_values;
+    //values.resize(num_values);
+    resize(num_values);
+
+    for (index_t i = 0; i < num_values; ++i)
+    {
+        values[i] = y.values[i];
+    }
 }
 
 /**************************************************************

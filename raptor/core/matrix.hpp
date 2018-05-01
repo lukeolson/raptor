@@ -128,13 +128,16 @@ namespace raptor
     }
     void mult(std::vector<double>& x, Vector& b)
     {
-        mult(x, b.values);
+        mult(x.data(), b.values);
     }
     void mult(Vector& x, std::vector<double>& b)
     {
-        mult(x.values, b);
+        mult(x.values, b.data());
     }
-    virtual void mult(std::vector<double>& x, std::vector<double>& b) = 0;
+    //virtual void mult(std::vector<double>& x, std::vector<double>& b) = 0;
+    virtual void mult(data_t *x, data_t *b) = 0;
+    
+    
 
     void mult_T(Vector& x, Vector& b)
     {
@@ -142,13 +145,14 @@ namespace raptor
     }
     void mult_T(std::vector<double>& x, Vector& b)
     {
-        mult_T(x, b.values);
+        mult_T(x.data(), b.values);
     }
     void mult_T(Vector& x, std::vector<double>& b)
     {
-        mult_T(x.values, b);
+        mult_T(x.values, b.data());
     }
-    virtual void mult_T(std::vector<double>& x, std::vector<double>& b) = 0;
+    //virtual void mult_T(std::vector<double>& x, std::vector<double>& b) = 0;
+    virtual void mult_T(data_t *x, data_t *b) = 0;
 
     void mult_append(Vector& x, Vector& b)
     {
@@ -156,13 +160,14 @@ namespace raptor
     }
     void mult_append(std::vector<double>& x, Vector& b)
     {
-        mult_append(x, b.values);
+        mult_append(x.data(), b.values);
     }
     void mult_append(Vector& x, std::vector<double>& b)
     {
-        mult_append(x.values, b);
+        mult_append(x.values, b.data());
     }
-    virtual void mult_append(std::vector<double>& x, std::vector<double>& b) = 0;
+    //virtual void mult_append(std::vector<double>& x, std::vector<double>& b) = 0;
+    virtual void mult_append(data_t *x, data_t *b) = 0;
 
     void mult_append_T(Vector& x, Vector& b)
     {
@@ -170,13 +175,14 @@ namespace raptor
     }
     void mult_append_T(std::vector<double>& x, Vector& b)
     {
-        mult_append_T(x, b.values);
+        mult_append_T(x.data(), b.values);
     }
     void mult_append_T(Vector& x, std::vector<double>& b)
     {
-        mult_append_T(x.values, b);
+        mult_append_T(x.values, b.data());
     }
-    virtual void mult_append_T(std::vector<double>& x, std::vector<double>& b) = 0;
+    //virtual void mult_append_T(std::vector<double>& x, std::vector<double>& b) = 0;
+    virtual void mult_append_T(data_t *x, data_t *b) = 0;
 
     void mult_append_neg(Vector& x, Vector& b)
     {
@@ -184,13 +190,14 @@ namespace raptor
     }
     void mult_append_neg(std::vector<double>& x, Vector& b)
     {
-        mult_append_neg(x, b.values);
+        mult_append_neg(x.data(), b.values);
     }
     void mult_append_neg(Vector& x, std::vector<double>& b)
     {
-        mult_append_neg(x.values, b);
+        mult_append_neg(x.values, b.data());
     }
-    virtual void mult_append_neg(std::vector<double>& x, std::vector<double>& b) = 0;
+    //virtual void mult_append_neg(std::vector<double>& x, std::vector<double>& b) = 0;
+    virtual void mult_append_neg(data_t *x, data_t *b) = 0;
 
     void mult_append_neg_T(Vector& x, Vector& b)
     {
@@ -198,13 +205,14 @@ namespace raptor
     }
     void mult_append_neg_T(std::vector<double>& x, Vector& b)
     {
-        mult_append_neg_T(x, b.values);
+        mult_append_neg_T(x.data(), b.values);
     }
     void mult_append_neg_T(Vector& x, std::vector<double>& b)
     {
-        mult_append_neg_T(x.values, b);
+        mult_append_neg_T(x.values, b.data());
     }
-    virtual void mult_append_neg_T(std::vector<double>& x, std::vector<double>& b) = 0;
+    //virtual void mult_append_neg_T(std::vector<double>& x, std::vector<double>& b) = 0;
+    virtual void mult_append_neg_T(data_t *x, data_t *b) = 0;
 
     void residual(const Vector& x, const Vector& b, Vector& r)
     {
@@ -212,10 +220,11 @@ namespace raptor
     }
     void residual(const std::vector<double>& x, const Vector& b, Vector& r)
     {
-        residual(x, b.values, r.values);
+        residual(x.data(), b.values, r.values);
     }
-    virtual void residual(const std::vector<double>& x, const std::vector<double>& b,
-            std::vector<double>& r) = 0;
+    //virtual void residual(const std::vector<double>& x, const std::vector<double>& b,std::vector<double>& r) = 0;
+    virtual void residual(const data_t *x, const data_t *b, data_t *r) = 0;
+            
 
     CSRMatrix* mult(const CSRMatrix* B){ return NULL; }
     CSRMatrix* mult(const CSCMatrix* B){ return NULL; }
@@ -477,49 +486,48 @@ namespace raptor
         Matrix::residual(x, b, r);
     }
 
-    void mult(std::vector<double>& x, std::vector<double>& b)
+    void mult(data_t *x, data_t *b)
     {
         for (int i = 0; i < n_rows; i++)
             b[i] = 0.0;
         mult_append(x, b);
     }
-    void mult_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_T(data_t *x, data_t *b)
     {
         for (int i = 0; i < n_cols; i++)
             b[i] = 0.0;
 
         mult_append_T(x, b);
     }
-    void mult_append(std::vector<double>& x, std::vector<double>& b)
+    void mult_append(data_t *x, data_t *b)
     { 
         for (int i = 0; i < nnz; i++)
         {
             b[idx1[i]] += vals[i] * x[idx2[i]];
         }
     }
-    void mult_append_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_T(data_t *x, data_t *b)
     {
         for (int i = 0; i < nnz; i++)
         {
             b[idx2[i]] += vals[i] * x[idx1[i]];
         }
     }
-    void mult_append_neg(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_neg(data_t *x, data_t *b)
     {
         for (int i = 0; i < nnz; i++)
         {
             b[idx1[i]] -= vals[i] * x[idx2[i]];
         }
     }
-    void mult_append_neg_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_neg_T(data_t *x, data_t *b)
     {
         for (int i = 0; i < nnz; i++)
         {
             b[idx2[i]] -= vals[i] * x[idx1[i]];
         }
     }
-    void residual(const std::vector<double>& x, const std::vector<double>& b,
-            std::vector<double>& r)
+    void residual(const data_t *x, const data_t *b, data_t *r)
     {
         for (int i = 0; i < n_rows; i++)
             r[i] = b[i];
@@ -763,13 +771,13 @@ namespace raptor
         Matrix::residual(x, b, r);
     }
 
-    void mult(std::vector<double>& x, std::vector<double>& b)
+    void mult(data_t *x, data_t *b)
     {
         for (int i = 0; i < n_rows; i++)
             b[i] = 0.0;
         mult_append(x, b);
     }
-    void mult_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_T(data_t *x, data_t *b)
 
     {
         for (int i = 0; i < n_cols; i++)
@@ -777,7 +785,7 @@ namespace raptor
 
         mult_append_T(x, b);    
     }
-    void mult_append(std::vector<double>& x, std::vector<double>& b)
+    void mult_append(data_t *x, data_t *b)
     { 
         int start, end;
         for (int i = 0; i < n_rows; i++)
@@ -790,7 +798,7 @@ namespace raptor
             }
         }
     }
-    void mult_append_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_T(data_t *x, data_t *b)
     {
         int start, end;
         for (int i = 0; i < n_rows; i++)
@@ -803,7 +811,7 @@ namespace raptor
             }
         }
     }
-    void mult_append_neg(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_neg(data_t *x, data_t *b)
     {
         int start, end;
         for (int i = 0; i < n_rows; i++)
@@ -816,7 +824,7 @@ namespace raptor
             }
         }
     }
-    void mult_append_neg_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_neg_T(data_t *x, data_t *b)
     {
         int start, end;
         for (int i = 0; i < n_rows; i++)
@@ -829,8 +837,7 @@ namespace raptor
             }
         }
     }
-    void residual(const std::vector<double>& x, const std::vector<double>& b, 
-            std::vector<double>& r)
+    void residual(const data_t *x, const data_t *b, data_t *r)
     {
         for (int i = 0; i < n_rows; i++)
             r[i] = b[i];
@@ -1064,20 +1071,20 @@ namespace raptor
         Matrix::residual(x, b, r);
     }
 
-    void mult(std::vector<double>& x, std::vector<double>& b)
+    void mult(data_t *x, data_t *b)
     {
         for (int i = 0; i < n_rows; i++)
             b[i] = 0.0;
         mult_append(x, b);
     }
-    void mult_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_T(data_t *x, data_t *b)
     {
         for (int i = 0; i < n_cols; i++)
             b[i] = 0.0;
 
         mult_append_T(x, b);
     }
-    void mult_append(std::vector<double>& x, std::vector<double>& b)
+    void mult_append(data_t *x, data_t *b)
     { 
         int start, end;
         for (int i = 0; i < n_cols; i++)
@@ -1090,7 +1097,7 @@ namespace raptor
             }
         }
     }
-    void mult_append_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_T(data_t *x, data_t *b)
     {
         int start, end;
         for (int i = 0; i < n_cols; i++)
@@ -1103,7 +1110,7 @@ namespace raptor
             }
         }
     }
-    void mult_append_neg(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_neg(data_t *x, data_t *b)
     {
         int start, end;
         for (int i = 0; i < n_cols; i++)
@@ -1116,7 +1123,7 @@ namespace raptor
             }
         }
     }
-    void mult_append_neg_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_neg_T(data_t *x, data_t *b)
     {
         int start, end;
         for (int i = 0; i < n_cols; i++)
@@ -1129,8 +1136,7 @@ namespace raptor
             }
         }
     }
-    void residual(const std::vector<double>& x, const std::vector<double>& b, 
-            std::vector<double>& r)
+    void residual(const data_t *x, const data_t *b, data_t *r)
     {
         for (int i = 0; i < n_rows; i++)
             r[i] = b[i];
@@ -1465,7 +1471,7 @@ namespace raptor
     }
 
     // STANDARD MULTIPLICATION
-    void mult(std::vector<double>& x, std::vector<double>& b)
+    void mult(data_t *x, data_t *b)
     {
         for (int i = 0; i < n_rows; i++)
             b[i] = 0.0;
@@ -1473,7 +1479,7 @@ namespace raptor
     }
 
     // TRANSPOSE MULTIPLICATION
-    void mult_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_T(data_t *x, data_t *b)
 
     {
         for (int i = 0; i < n_cols; i++)
@@ -1483,10 +1489,10 @@ namespace raptor
     }
 
     // STANDARD MULTIPLICATION HELPER
-    void mult_append(std::vector<double>& x, std::vector<double>& b)
+    void mult_append(data_t *x, data_t *b)
     { 
         int start, end;
-	int rowsOfBlocks = n_rows/b_rows;
+        int rowsOfBlocks = n_rows/b_rows;
         for (int i = 0; i < rowsOfBlocks; i++)
         {
             start = idx1[i];
@@ -1499,25 +1505,24 @@ namespace raptor
         }
     }
 
-    void block_mult(int row, int num_blocks_prev, int col,
-		    std::vector<double>& x, std::vector<double>& b)
+    void block_mult(int row, int num_blocks_prev, int col,data_t *x, data_t *b)
     {
         int upper_i = row * b_rows;
-	int upper_j = col * b_cols;
-	int data_offset = num_blocks_prev * b_size;
+        int upper_j = col * b_cols;
+        int data_offset = num_blocks_prev * b_size;
 
-	int glob_i, glob_j, ind;
-	for(int i=0; i<b_rows; i++){
+    	int glob_i, glob_j, ind;
+        for(int i=0; i<b_rows; i++){
             for(int j=0; j<b_cols; j++){
-		glob_i = upper_i + i;
-		glob_j = upper_j + j;
-		ind = i * b_cols + j + data_offset;
-		b[glob_i] += vals[ind] * x[glob_j];
-	    }
-	}
+                glob_i = upper_i + i;
+                glob_j = upper_j + j;
+                ind = i * b_cols + j + data_offset;
+                b[glob_i] += vals[ind] * x[glob_j];
+            }
+        }
     }
 
-    void mult_append_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_T(data_t *x, data_t *b)
     {
         int start, end;
         for (int i = 0; i < n_rows/b_rows; i++)
@@ -1532,25 +1537,24 @@ namespace raptor
         }
     }
 
-    void block_mult_T(int row, int num_blocks_prev, int col,
-		    std::vector<double>& x, std::vector<double>& b)
+    void block_mult_T(int row, int num_blocks_prev, int col, data_t *x, data_t *b)
     {
         int upper_i = row * b_rows;
-	int upper_j = col * b_cols;
-	int data_offset = num_blocks_prev * b_size;
+        int upper_j = col * b_cols;
+        int data_offset = num_blocks_prev * b_size;
 
-	int glob_i, glob_j, ind;
-	for(int i=0; i<b_rows; i++){
-            for(int j=0; j<b_cols; j++){
-		glob_i = upper_i + i;
-		glob_j = upper_j + j;
-		ind = i * b_cols + j + data_offset;
-		b[glob_j] += vals[ind] * x[glob_i];
-	    }
-	}
+    	int glob_i, glob_j, ind;
+        for(int i=0; i<b_rows; i++){
+            for(int j=0; j<b_cols; j++) {
+                glob_i = upper_i + i;
+                glob_j = upper_j + j;
+                ind = i * b_cols + j + data_offset;
+                b[glob_j] += vals[ind] * x[glob_i];
+            }
+        }
     }
 
-    void mult_append_neg(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_neg(data_t *x, data_t *b)
     {
         int start, end;
         for (int i = 0; i < n_rows/b_rows; i++)
@@ -1565,25 +1569,24 @@ namespace raptor
         }
     }
 
-    void block_mult_neg(int row, int num_blocks_prev, int col,
-		    std::vector<double>& x, std::vector<double>& b)
+    void block_mult_neg(int row, int num_blocks_prev, int col,data_t *x, data_t *b)
     {
         int upper_i = row * b_rows;
-	int upper_j = col * b_cols;
-	int data_offset = num_blocks_prev * b_size;
+        int upper_j = col * b_cols;
+        int data_offset = num_blocks_prev * b_size;
 
-	int glob_i, glob_j, ind;
-	for(int i=0; i<b_rows; i++){
+        int glob_i, glob_j, ind;
+        for(int i=0; i<b_rows; i++){
             for(int j=0; j<b_cols; j++){
-		glob_i = upper_i + i;
-		glob_j = upper_j + j;
-		ind = i * b_cols + j + data_offset;
-		b[glob_i] -= vals[ind] * x[glob_j];
-	    }
-	}
+                glob_i = upper_i + i;
+                glob_j = upper_j + j;
+                ind = i * b_cols + j + data_offset;
+                b[glob_i] -= vals[ind] * x[glob_j];
+            }
+        }
     }
 
-    void mult_append_neg_T(std::vector<double>& x, std::vector<double>& b)
+    void mult_append_neg_T(data_t *x, data_t *b)
     {
         int start, end;
         for (int i = 0; i < n_rows/b_rows; i++)
@@ -1597,26 +1600,25 @@ namespace raptor
         }
     }
 
-    void block_mult_neg_T(int row, int num_blocks_prev, int col,
-		    std::vector<double>& x, std::vector<double>& b)
+    void block_mult_neg_T(int row, int num_blocks_prev, int col,data_t *x, data_t *b)
+		    
     {
         int upper_i = row * b_rows;
-	int upper_j = col * b_cols;
-	int data_offset = num_blocks_prev * b_size;
+        int upper_j = col * b_cols;
+        int data_offset = num_blocks_prev * b_size;
 
-	int glob_i, glob_j, ind;
-	for(int i=0; i<b_rows; i++){
+        int glob_i, glob_j, ind;
+        for(int i=0; i<b_rows; i++){
             for(int j=0; j<b_cols; j++){
-		glob_i = upper_i + i;
-		glob_j = upper_j + j;
-		ind = i * b_cols + j + data_offset;
-		b[glob_j] -= vals[ind] * x[glob_i];
-	    }
-	}
+                glob_i = upper_i + i;
+                glob_j = upper_j + j;
+                ind = i * b_cols + j + data_offset;
+                b[glob_j] -= vals[ind] * x[glob_i];
+            }
+        }
     }
 
-    void residual(const std::vector<double>& x, const std::vector<double>& b, 
-            std::vector<double>& r)
+    void residual(const data_t *x, const data_t *b, data_t *r)            
     {
         for (int i = 0; i < n_rows; i++)
             r[i] = b[i];
@@ -1633,22 +1635,21 @@ namespace raptor
         }
     }
 
-    void block_res(int row, int num_blocks_prev, int col,
-		    const std::vector<double>& x, std::vector<double>& r)
+    void block_res(int row, int num_blocks_prev, int col,const data_t *x, data_t *r)		    
     {
         int upper_i = row * b_rows;
-	int upper_j = col * b_cols;
-	int data_offset = num_blocks_prev * b_size;
+        int upper_j = col * b_cols;
+        int data_offset = num_blocks_prev * b_size;
 
-	int glob_i, glob_j, ind;
-	for(int i=0; i<b_rows; i++){
+        int glob_i, glob_j, ind;
+        for(int i=0; i<b_rows; i++){
             for(int j=0; j<b_cols; j++){
-		glob_i = upper_i + i;
-		glob_j = upper_j + j;
-		ind = i * b_cols + j + data_offset;
-		r[glob_i] -= vals[ind] * x[glob_j];
-	    }
-	}
+                glob_i = upper_i + i;
+                glob_j = upper_j + j;
+                ind = i * b_cols + j + data_offset;
+                r[glob_i] -= vals[ind] * x[glob_j];
+            }
+        }
     }
 
 

@@ -73,8 +73,12 @@ public:
 
     void resize(int len)
     {
-        values.resize(len);
         num_values = len;
+        if (values != nullptr) {
+            free(values);
+        }
+        values = (data_t *) malloc (len*sizeof(data_t));
+        //values.resize(len);
     }
 
     /**************************************************************
@@ -183,7 +187,8 @@ public:
     **************************************************************/
     data_t* data()
     {
-        return values.data();
+        //return values.data();
+        return values;
     }
 
     index_t size()
@@ -193,7 +198,8 @@ public:
 
     data_t inner_product(Vector& x);
 
-    std::vector<data_t> values;
+    //std::vector<data_t> values;
+    data_t *values=nullptr;    
     index_t num_values;
 };
 
