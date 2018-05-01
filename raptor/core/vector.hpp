@@ -4,7 +4,7 @@
 #define RAPTOR_CORE_VECTOR_HPP_
 
 #include "core/types.hpp"
-
+#include <mpi.h>
 // Vector Class
 //
 // This class constructs a vector, supporting simple linear
@@ -41,6 +41,8 @@ class Vector
 {
 
 public:
+
+
     /**************************************************************
     *****   Vector Class Constructor
     **************************************************************
@@ -73,12 +75,27 @@ public:
 
     void resize(int len)
     {
+        MPI_Aint sz;
+        int dispUnit;    
+        
+        if (sm_comm == MPI_COMM_NULL) {
+            MPI_Comm_split_type(MPI_COMM_WORLD,MPI_COMM_TYPE_SHARED, 0,MPI_INFO_NULL, &sm_comm);
+        } // end if //
+        int mySharedRank;
+        MPI_Comm_rank(sm_comm,&mySharedRank);
+        
         num_values = len;
+        
         if (values != nullptr) {
-            free(values);
+            //free(values);
+            MPI_Win_unlock_all(sm_win);
+            MPI_Win_free(&sm_win);
         }
-        values = (data_t *) malloc (len*sizeof(data_t));
-        //values.resize(len);
+        //values = (data_t *) malloc (len*sizeof(data_t));
+        MPI_Win_allocate_shared((MPI_Aint) len*sizeof(data_t),sizeof(data_t),MPI_INFO_NULL,sm_comm,&values,&sm_win);
+        MPI_Win_shared_query(sm_win, mySharedRank, &sz,&dispUnit,&values);
+        MPI_Win_shared_query(sm_win, MPI_PROC_NULL, &sz,&dispUnit,&valuesNodal);
+        MPI_Win_lock_all(0,sm_win);         
     }
 
     /**************************************************************
@@ -200,7 +217,11 @@ public:
 
     //std::vector<data_t> values;
     data_t *values=nullptr;    
+    data_t *valuesNodal=nullptr;    
     index_t num_values;
+    
+    MPI_Win sm_win;
+    MPI_Comm sm_comm=MPI_COMM_NULL;
 };
 
 }
