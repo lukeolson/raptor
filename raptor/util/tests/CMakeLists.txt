@@ -1,21 +1,21 @@
 add_executable(test_spmv_laplacian test_spmv_laplacian.cpp)
-target_link_libraries(test_spmv_laplacian raptor googletest pthread )
+target_link_libraries(test_spmv_laplacian raptor ${MPI_LIBRARIES} googletest pthread )
 add_test(LaplacianSpMVTest ./test_spmv_laplacian)
 
 add_executable(test_spmv_aniso test_spmv_aniso.cpp)
-target_link_libraries(test_spmv_aniso raptor googletest pthread )
+target_link_libraries(test_spmv_aniso raptor ${MPI_LIBRARIES} googletest pthread )
 add_test(AnisoSpMVTest ./test_spmv_aniso)
 
 add_executable(test_spmv_random test_spmv_random.cpp)
-target_link_libraries(test_spmv_random raptor googletest pthread )
+target_link_libraries(test_spmv_random raptor ${MPI_LIBRARIES} googletest pthread )
 add_test(RandomSpMVTest ./test_spmv_random)
 
 add_executable(test_bsr_spmv test_bsr_spmv.cpp)
-target_link_libraries(test_bsr_spmv raptor)
+target_link_libraries(test_bsr_spmv raptor ${MPI_LIBRARIES})
 add_test(BSRSpMVtest ./test_bsr_spmv)
 
 add_executable(test_bsr_spmv_v2 test_bsr_spmv_v2.cpp)
-target_link_libraries(test_bsr_spmv_v2 raptor)
+target_link_libraries(test_bsr_spmv_v2 raptor ${MPI_LIBRARIES})
 add_test(BSRSpMVtestv2 ./test_bsr_spmv_v2)
 
 add_executable(test_par_bsr_spmv test_par_bsr_spmv.cpp)
