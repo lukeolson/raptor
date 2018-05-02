@@ -75,6 +75,10 @@ public:
 
     void resize(int len)
     {
+        int done_already;
+        MPI_Initialized(&done_already);
+        if (!done_already) MPI_Init(NULL, NULL);
+       
         MPI_Aint sz;
         int dispUnit;    
         
