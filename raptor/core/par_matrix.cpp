@@ -2,7 +2,184 @@
 // License: Simplified BSD, http://opensource.org/licenses/BSD-2-Clause
 #include "par_matrix.hpp"
 
+
 using namespace raptor;
+
+bool myFunction (index_t i,index_t j) { return (i<j); }
+
+// proc_to_nodal cerates an on_node matrix from the on_proc matrix
+// and part of the off_proc matrix
+void ParMatrix::proc_to_nodal() 
+{
+    // erease after finishing
+    int myWorkdRank,mySharedRank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &myWorkdRank);
+    MPI_Comm_rank(partition->topology->local_comm, &mySharedRank);
+    //cout << "myWorkdRank: " << myWorkdRank << ", mySharedRank: " << mySharedRank << endl;
+    // erease after finishing
+    
+    const index_t nRows     = on_proc->n_rows; // nRows and nRows_off should be the same
+    const index_t nRows_off = off_proc->n_rows;// only if there exist values in off part
+
+    index_t *on_proc_column_map;
+    on_proc_column_map = (index_t *) malloc (on_proc_num_cols*sizeof(index_t));
+
+    // recreate the on_proc_column_map
+    for (int i=0; i<on_proc_num_cols; ++i) {
+        on_proc_column_map[i] =  i + partition->first_local_col;
+    } // end for //
+    // end of recreating the on_proc_column_map
+    
+    int firstNodalColumn; 
+    int lastNodalColumn;
+    
+    MPI_Allreduce(&partition->first_local_col, &firstNodalColumn, 1, MPI_INT, MPI_MIN,partition->topology->local_comm);    
+    MPI_Allreduce(&partition->last_local_col,  &lastNodalColumn,  1, MPI_INT, MPI_MAX,partition->topology->local_comm);
+
+    index_t nnz = on_proc->nnz;
+    index_t nnz_off = off_proc->nnz;
+
+    // expanding the off_proc_map
+    int *expandedOffMap = (int *) malloc(off_proc->nnz *sizeof(int ));
+    for (int i=0; i< off_proc->nnz; ++i) {
+        expandedOffMap[i] = off_proc_column_map[off_proc->idx2[i]];
+    } // end for //
+    
+    
+    // estimating the new nnz and nnz_off for the node
+    for (int i=0; i<off_proc->nnz ; ++i ) {
+        if (expandedOffMap[i] >= firstNodalColumn && expandedOffMap[i] <= lastNodalColumn  )  { 
+            ++nnz;
+            --nnz_off;
+        } // end if //
+    } // end for //
+
+    data_t  *val =      (data_t *) malloc(nnz *sizeof(data_t ));
+    index_t *row_ptr =  (int *)    calloc((nRows+1),sizeof(int));
+    index_t *col_idx =  (int *)    malloc(nnz *sizeof(int));
+
+
+    data_t  *val_off     = (data_t *) malloc(nnz_off *sizeof(data_t ));
+    index_t *row_ptr_off = (int *)    calloc((nRows+1),sizeof(int ));
+    index_t *col_idx_off = (int *)    malloc(nnz_off *sizeof(int ));
+
+    
+    row_ptr[0] = row_ptr_off[0] = 0;
+    int k_node_on ,k_proc_on;
+    int k_node_off ,k_proc_off;
+    k_node_on = k_proc_on = k_node_off = k_proc_off = 0;
+
+    std::vector<index_t> offNodeMap;
+
+    // transfering non-zeros form original on_proc and off_proc
+    // parts to the new on_node in a row by row basis
+    for (int i=1; i<=nRows; ++i ) {
+        // start by copying the on proc part to on_node part
+        int nnzPerRow = on_proc->idx1[i] - on_proc->idx1[i-1];
+        row_ptr[i] = row_ptr[i-1] + nnzPerRow;
+        for (int j=0; j<nnzPerRow; ++j, ++k_node_on, ++k_proc_on) {
+            val[k_node_on]     = on_proc->vals[k_proc_on];
+            col_idx[k_node_on] = on_proc_column_map[ (on_proc->idx2[k_proc_on])]-firstNodalColumn;
+        } // end for //
+        
+        // now starts the fun: exploring the off proc part
+        row_ptr_off[i] = row_ptr_off[i-1];
+        
+        if (off_proc->nnz) {
+            nnzPerRow = off_proc->idx1[i] - off_proc->idx1[i-1];
+            for (int j=0; j<nnzPerRow; ++j, ++k_proc_off) {
+            
+                if( expandedOffMap[k_proc_off] >= firstNodalColumn && expandedOffMap[k_proc_off] <= lastNodalColumn   ) {
+                    // these values will be part of onNode
+                    val[k_node_on]     = off_proc->vals[k_proc_off];
+                    ++row_ptr[i];
+                    col_idx[k_node_on] = expandedOffMap[k_proc_off] - firstNodalColumn;
+                    ++k_node_on;
+                } else {
+                    // these values will be part of offNode
+                    val_off[k_node_off]     = off_proc->vals[k_proc_off];
+                    ++row_ptr_off[i];
+                    //offNodeMap.push_back(A->off_proc_column_map[A->off_proc->idx2[k_proc_off]]);
+                    offNodeMap.push_back( expandedOffMap[k_proc_off]);
+                    ++k_node_off;
+                } // end if //
+            } // end for //      
+        } // end if //      
+        
+    } // end for //
+
+
+    free(on_proc_column_map);
+    free(expandedOffMap);
+    
+    
+    
+    std::vector<index_t> offNodeMapTemp;
+    offNodeMapTemp=offNodeMap;
+    
+    std::sort (offNodeMap.begin(), offNodeMap.end(), myFunction);
+    offNodeMap.erase( unique( offNodeMap.begin(), offNodeMap.end() ), offNodeMap.end() );
+
+    for (int i=0; i<nnz_off; ++i ) {
+        int pos = find(offNodeMap.begin(), offNodeMap.end(), offNodeMapTemp[i] ) - offNodeMap.begin();    
+        col_idx_off[i] = pos;
+    } // end for //
+
+
+
+    
+    // transfering modified data to actual partition matrix
+    
+    on_proc->nnz=nnz;
+    off_proc->nnz = nnz_off;
+    
+    for (int i=0; i<=nRows; ++i ) {
+        on_proc->idx1[i]=row_ptr[i];
+        off_proc->idx1[i]=row_ptr_off[i];
+    } // end for //
+    
+    on_proc->vals.resize(nnz);
+    on_proc->idx2.resize(nnz);
+    for (int i=0; i<nnz; ++i ) {
+        on_proc->vals[i] = val[i];
+        on_proc->idx2[i] = col_idx[i];
+    }
+    
+    off_proc->vals.resize(nnz_off);
+    off_proc->idx2.resize(nnz_off);
+    for (int i=0; i<nnz_off; ++i ) {
+        off_proc->vals[i] = val_off[i];
+        off_proc->idx2[i] = col_idx_off[i];
+    }
+    
+
+
+    free(val);
+    free(row_ptr);
+    free(col_idx);
+
+
+    free(val_off);
+    free(row_ptr_off);
+    free(col_idx_off);
+
+    delete comm;
+    comm = new ParComm(partition, offNodeMap);
+    off_proc_column_map=offNodeMap;
+    off_proc_num_cols = off_proc_column_map.size();
+    
+}
+
+/*
+void ParMatrix::expand_off_col_map() 
+{
+    expandedOffMap = new int [off_proc->nnz];
+    for (int i=0; i< off_proc->nnz; ++i) {
+        expandedOffMap[i] = off_proc_column_map[off_proc->idx2[i]];
+    } // end for //
+}
+*/
+
 
 /**************************************************************
 *****   ParMatrix Add Value

@@ -315,6 +315,11 @@ namespace raptor
     virtual void copy(ParBSRMatrix* A) = 0;
 
     virtual void add_block(int global_row_coarse, int global_col_coarse, std::vector<double>& data) = 0;
+    
+    // proc_to_nodal cerates an on_node matrix from the on_proc matrix
+    // and part of the off_proc matrix
+    void proc_to_nodal();  
+    //
 
     // Store dimensions of parallel matrix
     int local_nnz;
@@ -616,6 +621,7 @@ namespace raptor
     
     void add_block(int global_row_coarse, int global_col_coarse, std::vector<double>& data);
 
+    
     ParMatrix* transpose();
   };
 

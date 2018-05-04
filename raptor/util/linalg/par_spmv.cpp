@@ -30,7 +30,7 @@ void ParMatrix::mult(ParVector& x, ParVector& b)
     spmv_data.time -= MPI_Wtime();
     // Check that communication package has been initialized
     if (comm == NULL)
-    {
+    {   
         comm = new ParComm(partition, off_proc_column_map, on_proc_column_map);
     }
 
@@ -42,12 +42,12 @@ void ParMatrix::mult(ParVector& x, ParVector& b)
     // setting b = A_diag*x_local
     if (local_num_rows)
     {
-        on_proc->mult(x.local, b.local);
+        on_proc->mult(x.local.valuesNodal, b.local.values);
     }
 
     // Wait for Isends and Irecvs to complete
     spmv_data.comm_time -= MPI_Wtime();
-    std::vector<double>& x_tmp = comm->complete_comm<double>();
+    std::vector<data_t>& x_tmp = comm->complete_comm<data_t>();
     spmv_data.comm_time += MPI_Wtime();
 
     // Multiply remaining columns, appending to previous
@@ -58,6 +58,7 @@ void ParMatrix::mult(ParVector& x, ParVector& b)
     }
     spmv_data.time += MPI_Wtime();
 }
+
 
 void ParMatrix::tap_mult(ParVector& x, ParVector& b)
 {
