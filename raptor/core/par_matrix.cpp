@@ -14,8 +14,12 @@ void ParMatrix::proc_to_nodal()
     // erease after finishing
     int myWorkdRank,mySharedRank;
     MPI_Comm_rank(MPI_COMM_WORLD, &myWorkdRank);
-    MPI_Comm_rank(partition->topology->local_comm, &mySharedRank);
-    //cout << "myWorkdRank: " << myWorkdRank << ", mySharedRank: " << mySharedRank << endl;
+    
+    
+    MPI_Comm sm_comm;
+    MPI_Comm_split_type(MPI_COMM_WORLD,MPI_COMM_TYPE_SHARED, 0,MPI_INFO_NULL, &sm_comm);
+    MPI_Comm_rank(sm_comm, &mySharedRank);
+    
     // erease after finishing
     
     const index_t nRows     = on_proc->n_rows; // nRows and nRows_off should be the same
@@ -33,8 +37,10 @@ void ParMatrix::proc_to_nodal()
     int firstNodalColumn; 
     int lastNodalColumn;
     
-    MPI_Allreduce(&partition->first_local_col, &firstNodalColumn, 1, MPI_INT, MPI_MIN,partition->topology->local_comm);    
-    MPI_Allreduce(&partition->last_local_col,  &lastNodalColumn,  1, MPI_INT, MPI_MAX,partition->topology->local_comm);
+    MPI_Allreduce(&partition->first_local_col, &firstNodalColumn, 1, MPI_INT, MPI_MIN,sm_comm);    
+    MPI_Allreduce(&partition->last_local_col,  &lastNodalColumn,  1, MPI_INT, MPI_MAX,sm_comm);
+    
+    
 
     index_t nnz = on_proc->nnz;
     index_t nnz_off = off_proc->nnz;
