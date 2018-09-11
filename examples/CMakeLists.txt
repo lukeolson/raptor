@@ -23,6 +23,9 @@ if (WITH_MPI)
     add_executable(benchmark_tap_spmv benchmark_tap_spmv.cpp)
     target_link_libraries(benchmark_tap_spmv raptor ${MPI_LIBRARIES})
 
+    add_executable(benchmark_io benchmark_io.cpp)
+    target_link_libraries(benchmark_io raptor ${MPI_LIBRARIES})
+
     add_executable(benchmark_tap_spgemm benchmark_tap_spgemm.cpp)
     target_link_libraries(benchmark_tap_spgemm raptor ${MPI_LIBRARIES})
 
@@ -40,6 +43,15 @@ if (WITH_MPI)
 
     add_executable(benchmark_tap_amg benchmark_tap_amg.cpp)
     target_link_libraries(benchmark_tap_amg raptor ${MPI_LIBRARIES})
+
+    add_executable(benchmark_sas benchmark_sas.cpp)
+    target_link_libraries(benchmark_sas raptor ${MPI_LIBRARIES})
+
+    add_executable(benchmark_matmult benchmark_matmult.cpp)
+    target_link_libraries(benchmark_matmult raptor ${MPI_LIBRARIES})
+
+    add_executable(profile_tap_amg profile_tap_amg.cpp)
+    target_link_libraries(profile_tap_amg raptor ${MPI_LIBRARIES})
 endif()
 
 

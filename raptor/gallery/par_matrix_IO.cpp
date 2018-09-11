@@ -199,6 +199,7 @@ ParCSRMatrix* readParMatrix(const char* filename,
     A->on_proc->nnz = A->on_proc->idx2.size();
     A->off_proc->nnz = A->off_proc->idx2.size();
 
+
     A->finalize();
 
     return A;

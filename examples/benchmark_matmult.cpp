@@ -28,107 +28,181 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
-    int dim=0;
-    int n = 5;
-    int system = 0;
+    char* filename = argv[1];
 
-    if (argc > 1)
+    if (rank == 0) printf("Reading in A\n");
+    ParCSRMatrix* A = readParMatrix(filename);
+    if (!A->comm)
+        A->comm = new ParComm(A->partition, A->off_proc_column_map);
+    if (!A->tap_comm)
+        A->tap_comm = new TAPComm(A->partition, A->off_proc_column_map);
+
+    ParCSRMatrix* T = (ParCSRMatrix*) (A->transpose());
+    if (!T->comm)
+        T->comm = new ParComm(T->partition, T->off_proc_column_map);
+    if (!T->tap_comm)
+        T->tap_comm = new TAPComm(T->partition, T->off_proc_column_map);
+
+    ParCSRMatrix* B = new ParCSRMatrix(A);
+    if (!B->comm)
+        B->comm = new ParComm(B->partition, B->off_proc_column_map);
+    if (!B->tap_comm)
+        B->tap_comm = new TAPComm(B->partition, B->off_proc_column_map);
+
+
+
+if (A->global_num_rows != T->global_num_cols) printf("Dif dims\n");
+if (A->global_num_cols != T->global_num_rows) printf("Dif dims\n");
+if (A->partition->first_local_row != T->partition->first_local_col) printf("Diff dims\n");
+if (A->partition->first_local_col != T->partition->first_local_row) printf("Diff dims\n");
+if (A->local_num_rows != T->on_proc_num_cols) printf("Different local dims\n");
+if (A->on_proc_num_cols != T->local_num_rows) printf("Different local dims\n");
+
+CSCMatrix* T_on = new CSCMatrix((CSRMatrix*)T->on_proc);
+/*for (int i = 0; i < A->local_num_rows; i++)
+{
+    if (A->on_proc->idx1[i+1] != T_on->idx1[i+1]) printf("Diff indptr\n");
+    for (int j = A->on_proc->idx1[i]; j < A->on_proc->idx1[i+1]; j++)
     {
-        system = atoi(argv[1]);
-    }
+        if (A->on_proc->idx2[j] != T_on->idx2[j]) printf("Different indices\n");
+        if (fabs(A->on_proc->vals[j] - T_on->vals[j]) > zero_tol) printf("Different vals\n");
+    } 
+}*/
 
-    ParCSRMatrix* A=nullptr;
+CSCMatrix* A_csc = new CSCMatrix((CSRMatrix*) A->off_proc);
+for (int i = 0; i < A_csc->nnz; i++)
+{
+    int row = A_csc->idx2[i];
+    A_csc->idx2[i] = A->local_row_map[row];
+}    
+CSRMatrix* recv_mat = A->comm->communicate_T(A_csc->idx1, A_csc->idx2, A_csc->vals, A->local_num_rows);
+if (T->off_proc->nnz != recv_mat->nnz) printf("A->off_proc %d, recvmat %d\n", T->off_proc->nnz, recv_mat->nnz);
+recv_mat->sort();
+T->off_proc->sort();
+for (int i = 0; i < A->local_num_rows; i++)
+{
+    if (T->off_proc->idx1[i+1] != recv_mat->idx1[i+1]) printf("Diff indptr\n");
+    for (int j = T->off_proc->idx1[i]; j < T->off_proc->idx1[i+1]; j++)
+    {
+        if (T->off_proc_column_map[T->off_proc->idx2[j]] != recv_mat->idx2[j]) printf("Diff indices\n");
+        if (fabs(T->off_proc->vals[j] - recv_mat->vals[j]) > zero_tol) printf("Diff values\n");
+   
+        if (T->off_proc_column_map[T->off_proc->idx2[j]] != recv_mat->idx2[j]
+            ||  fabs(T->off_proc->vals[j] - recv_mat->vals[j]) > zero_tol) break;
+    }
+}
+
+
+std::vector<int> send_procs(num_procs, 0);
+std::vector<int> recv_procs(num_procs, 0);
+for (int i = 0; i < T->comm->send_data->num_msgs; i++)
+{
+    int proc = T->comm->send_data->procs[i];
+    send_procs[proc] = (T->comm->send_data->indptr[i+1] - T->comm->send_data->indptr[i]);
+}
+for (int i = 0; i < T->comm->recv_data->num_msgs; i++)
+{
+    int proc = T->comm->recv_data->procs[i];
+    recv_procs[proc] = (T->comm->recv_data->indptr[i+1] - T->comm->recv_data->indptr[i]);
+}
+
+    long nnz = A->local_nnz;
+    long sum_nnz;
+    MPI_Reduce(&nnz, &sum_nnz, 1, MPI_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
+    if (rank == 0) printf("A %d x %d with %ld nnz\n", A->global_num_rows, A->global_num_cols,
+            sum_nnz);
 
     double t0, tfinal;
+    int num_tests = 1;
+    ParCSRMatrix* C;
 
-    int cache_len = 10000;
-    int num_tests = 2;
+MPI_Barrier(MPI_COMM_WORLD);
+if (rank == 0) printf("communicating\n");
+CSRMatrix* recv_tmp = T->comm->communicate(A);
+printf("RecvTmp %d, %d, %d\n", recv_tmp->n_rows, recv_tmp->n_cols, recv_tmp->nnz);
+delete recv_tmp;
 
-    aligned_vector<double> cache_array(cache_len);
 
-    if (system < 2)
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (rank == 0) printf("Warming up...\n");
+    C = T->mult(A);
+    delete C;
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if (rank == 0) printf("Multiplying...\n");
+    tfinal = 0;
+    //for (int i = 0; i < num_tests; i++)
     {
-        double* stencil = NULL;
-        aligned_vector<int> grid;
-        if (argc > 2)
-        {
-            n = atoi(argv[2]);
-        }
-
-        if (system == 0)
-        {
-            dim = 3;
-            grid.resize(dim, n);
-            stencil = laplace_stencil_27pt();
-        }
-        else if (system == 1)
-        {
-            dim = 2;
-            grid.resize(dim, n);
-            double eps = 0.001;
-            double theta = M_PI/8.0;
-            if (argc > 3)
-            {
-                eps = atof(argv[3]);
-                if (argc > 4)
-                {
-                    theta = atof(argv[4]);
-                }
-            }
-            stencil = diffusion_stencil_2d(eps, theta);
-        }
-        A = par_stencil_grid(stencil, grid.data(), dim);
-        delete[] stencil;
-    }
-#ifdef USING_MFEM
-    else if (system == 2)
-    {
-        char* mesh_file = argv[2];
-        int num_elements = 2;
-        int order = 3;
-        if (argc > 3)
-        {
-            num_elements = atoi(argv[3]);
-            if (argc > 4)
-            {
-                order = atoi(argv[4]);
-            }
-        }
-        ParVector x;
-        ParVector b;
-        int num_variables = 1;
-        A = mfem_linear_elasticity(x, b, &num_variables, mesh_file, num_elements, order);
-    }
-#endif
-    else if (system == 3)
-    {
-        const char* file = "../../test_data/rss_A0.pm";
-
-        if (argc > 2)
-        {
-            file = argv[2];
-
-
-
-
-        }
-        A = readParMatrix(file);
-    }
-
-    for (int i = 0; i < num_tests; i++)
-    {
-        clear_cache(cache_array);
         MPI_Barrier(MPI_COMM_WORLD);
         t0 = MPI_Wtime();
-        ParCSRMatrix* A2 = A->mult(A);
-        tfinal = MPI_Wtime() - t0;
-        delete A2;
-
-        MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-        if (rank == 0) printf("Test %d Max A^2 Time: %e\n", i, t0);
+        C = T->mult(A);
+        tfinal += (MPI_Wtime() - t0);
+        delete C;
     }
+    tfinal /= num_tests;
+    MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    if (rank == 0) printf("Row Wise SpGEMM: %e\n", t0);
+
+
+    if (rank == 0) printf("Warming up...\n");
+    C = T->tap_mult(A);
+    delete C;
+
+    if (rank == 0) printf("Multiplying...\n");
+    tfinal = 0;
+    for (int i = 0; i < num_tests; i++)
+    {
+        MPI_Barrier(MPI_COMM_WORLD);
+        t0 = MPI_Wtime();
+        C = T->tap_mult(A);
+        tfinal += (MPI_Wtime() - t0);
+        delete C;
+    }
+    tfinal /= num_tests;
+    MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    if (rank == 0) printf("Row Wise NAP SpGEMM: %e\n", t0);
+
+    if (rank == 0) printf("Warming up...\n");
+    C = A->mult_T(A);
+    delete C;
+
+    if (rank == 0) printf("Multiplying...\n");
+    tfinal = 0;
+    for (int i = 0; i < num_tests; i++)
+    {
+        MPI_Barrier(MPI_COMM_WORLD);
+        t0 = MPI_Wtime();
+        C = A->mult_T(A);
+        tfinal += (MPI_Wtime() - t0);
+        delete C;
+    }
+    tfinal /= num_tests;
+    MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    if (rank == 0) printf("Outer Product SpGEMM: %e\n", t0);
+
+    if (rank == 0) printf("Warming up...\n");
+    C = A->tap_mult_T(A);
+    delete C;
+
+    if (rank == 0) printf("Multiplying...\n");
+    tfinal = 0;
+    for (int i = 0; i < num_tests; i++)
+    {
+        MPI_Barrier(MPI_COMM_WORLD);
+        t0 = MPI_Wtime();
+        C = A->tap_mult_T(A);
+        tfinal += (MPI_Wtime() - t0);
+        delete C;
+    }
+    tfinal /= num_tests;
+    MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    if (rank == 0) printf("Outer Product NAP SpGEMM: %e\n", t0);
+
+
 
     delete A;
+    delete B;
+    delete T;
 
     MPI_Finalize();
 

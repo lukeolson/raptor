@@ -227,7 +227,7 @@ CSRMatrix* CommPkg::communicate(ParCSRMatrix* A)
     return communicate(rowptr, col_indices, values);
 }
 
-CSRMatrix* communication_helper(const aligned_vector<int>& rowptr,
+CSRMatrix* ParComm::communication_helper(const aligned_vector<int>& rowptr,
         const aligned_vector<int>& col_indices, const aligned_vector<double>& values,
         CommData* send_comm, CommData* recv_comm, int key, MPI_Comm mpi_comm)
 {
@@ -400,7 +400,7 @@ CSRMatrix* communication_helper(const aligned_vector<int>& rowptr,
 }    
 
 
-CSRMatrix* communication_helper(const aligned_vector<int>& rowptr,
+CSRMatrix* ParComm::communication_helper(const aligned_vector<int>& rowptr,
         const aligned_vector<int>& col_indices, CommData* send_comm, 
         CommData* recv_comm, int key, MPI_Comm mpi_comm)
 {
@@ -787,19 +787,19 @@ CSRMatrix* TAPComm::communicate_T(const aligned_vector<int>& rowptr,
     int ctr, size;
     int row_start, row_end, row_size;
 
-    CSRMatrix* L_mat = communication_helper(rowptr, col_indices, 
+    CSRMatrix* L_mat = local_L_par_comm->communication_helper(rowptr, col_indices, 
             values, local_L_par_comm->recv_data, 
             local_L_par_comm->send_data, local_L_par_comm->key,
             local_L_par_comm->mpi_comm);
     local_L_par_comm->key++;
 
-    CSRMatrix* R_mat = communication_helper(rowptr, col_indices, 
+    CSRMatrix* R_mat = local_R_par_comm->communication_helper(rowptr, col_indices, 
             values, local_R_par_comm->recv_data, 
             local_R_par_comm->send_data, local_R_par_comm->key,
             local_R_par_comm->mpi_comm);
     local_R_par_comm->key++;
 
-    CSRMatrix* G_mat = communication_helper(R_mat->idx1, R_mat->idx2,
+    CSRMatrix* G_mat = global_par_comm->communication_helper(R_mat->idx1, R_mat->idx2,
             R_mat->vals, global_par_comm->recv_data, global_par_comm->send_data,
             global_par_comm->key, global_par_comm->mpi_comm);
     global_par_comm->key++;
@@ -809,7 +809,7 @@ CSRMatrix* TAPComm::communicate_T(const aligned_vector<int>& rowptr,
     ParComm* final_comm;
     if (local_S_par_comm)
     {
-        final_mat = communication_helper(G_mat->idx1, G_mat->idx2,
+        final_mat = local_S_par_comm->communication_helper(G_mat->idx1, G_mat->idx2,
                 G_mat->vals, local_S_par_comm->recv_data, local_S_par_comm->send_data, 
                 local_S_par_comm->key, local_S_par_comm->mpi_comm);
         local_S_par_comm->key++;
@@ -977,17 +977,17 @@ CSRMatrix* TAPComm::communicate_T(const aligned_vector<int>& rowptr,
     int ctr, size;
     int row_start, row_end, row_size;
 
-    CSRMatrix* L_mat = communication_helper(rowptr, col_indices, 
+    CSRMatrix* L_mat = local_L_par_comm->communication_helper(rowptr, col_indices, 
             local_L_par_comm->recv_data, 
             local_L_par_comm->send_data, local_L_par_comm->key,
             local_L_par_comm->mpi_comm);
 
-    CSRMatrix* R_mat = communication_helper(rowptr, col_indices, 
+    CSRMatrix* R_mat = local_R_par_comm->communication_helper(rowptr, col_indices, 
             local_R_par_comm->recv_data, 
             local_R_par_comm->send_data, local_R_par_comm->key,
             local_R_par_comm->mpi_comm);
 
-    CSRMatrix* G_mat = communication_helper(R_mat->idx1, R_mat->idx2,
+    CSRMatrix* G_mat = global_par_comm->communication_helper(R_mat->idx1, R_mat->idx2,
             global_par_comm->recv_data, global_par_comm->send_data,
             global_par_comm->key, global_par_comm->mpi_comm);
     delete R_mat;
@@ -996,7 +996,7 @@ CSRMatrix* TAPComm::communicate_T(const aligned_vector<int>& rowptr,
     ParComm* final_comm;
     if (local_S_par_comm)
     {
-        final_mat = communication_helper(G_mat->idx1, G_mat->idx2,
+        final_mat = local_S_par_comm->communication_helper(G_mat->idx1, G_mat->idx2,
                 local_S_par_comm->recv_data, local_S_par_comm->send_data, 
                 local_S_par_comm->key, local_S_par_comm->mpi_comm);
         delete G_mat;

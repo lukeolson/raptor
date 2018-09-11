@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
     int n = 5;
     int system = 0;
     int num_variables = 1;
+    int num_tests;
 
     if (argc > 1)
     {
@@ -161,6 +162,7 @@ int main(int argc, char *argv[])
                 strong_threshold = 0.5;
                 A = mfem_linear_elasticity(x, b, &num_variables, mesh_file, order, 
                         seq_refines, par_refines);
+num_variables = 1;
                 break;
             case 3:
                 A = mfem_adaptive_laplacian(x, b, mesh_file, order);
@@ -207,7 +209,7 @@ int main(int argc, char *argv[])
     // Setup Raptor Hierarchy
     MPI_Barrier(MPI_COMM_WORLD);    
     t0 = MPI_Wtime();
-    ml = new ParRugeStubenSolver(strong_threshold, RS, Direct, Classical, SOR);
+    ml = new ParRugeStubenSolver(strong_threshold, Falgout, ModClassical, Classical, SOR);
     ml->num_variables = num_variables;
     ml->setup(A);
     raptor_setup = MPI_Wtime() - t0;
@@ -222,7 +224,7 @@ int main(int argc, char *argv[])
         if (!Al->tap_comm) Al->tap_comm = new TAPComm(Al->partition,
                 Al->off_proc_column_map, Al->on_proc_column_map);
 
-        if (rank == 0) printf("Level %d\n", i);
+        if (rank == 0) printf("Level %d: Global Rows = %d\n", i, Al->global_num_rows);
 
 
         // Time SpMV on Level i
@@ -289,24 +291,55 @@ int main(int argc, char *argv[])
             }
         }
 
-        int comm;
-        MPI_Reduce(&n_intra, &comm, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
-        if (rank == 0) printf("Num Intra Msgs: %d\n", comm);
-        MPI_Reduce(&n_inter, &comm, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
-        if (rank == 0) printf("Num Inter Msgs: %d\n", comm);
-        MPI_Reduce(&s_intra, &comm, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
-        if (rank == 0) printf("Size Intra Msgs: %d\n", comm);
-        MPI_Reduce(&s_inter, &comm, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
-        if (rank == 0) printf("Size Inter Msgs: %d\n", comm);
-        MPI_Reduce(&tap_n_intra, &comm, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
-        if (rank == 0) printf("TAP Num Intra Msgs: %d\n", comm);
-        MPI_Reduce(&tap_n_inter, &comm, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
-        if (rank == 0) printf("TAP Num Inter Msgs: %d\n", comm);
-        MPI_Reduce(&tap_s_intra, &comm, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
-        if (rank == 0) printf("TAP Size Intra Msgs: %d\n", comm);
-        MPI_Reduce(&tap_s_inter, &comm, 1, MPI_INT, MPI_MAX, 0, MPI_COMM_WORLD);
-        if (rank == 0) printf("TAP Size Inter Msgs: %d\n", comm);
+        double off2on, maxoff2on;
+
+        off2on = 0;
+        if (n_intra)
+            off2on = n_inter / n_intra;
+        MPI_Reduce(&off2on, &maxoff2on, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        if (rank == 0) printf("Max Percentage N Msgs: %e\n", maxoff2on);
+ 
+        off2on = 0;
+        if (s_intra)
+            off2on = s_inter / s_intra;
+        MPI_Reduce(&off2on, &maxoff2on, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        if (rank == 0) printf("Max Percentage S Msgs: %e\n", maxoff2on);
+ 
+        off2on = 0;
+        if (tap_n_intra)
+            off2on = tap_n_inter / tap_n_intra;
+        MPI_Reduce(&off2on, &maxoff2on, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        if (rank == 0) printf("Max Percentage TAP N Msgs: %e\n", maxoff2on);
+ 
+        off2on = 0;
+        if (tap_s_intra)
+            off2on = tap_s_inter / tap_s_intra;
+        MPI_Reduce(&off2on, &maxoff2on, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        if (rank == 0) printf("Max Percentage TAP S Msgs: %e\n", maxoff2on);
     }
+
+    // Solve Phase iteration times
+    ml->tap_amg = -1;
+    num_tests = 100;
+    t0 = MPI_Wtime();
+    for (int i = 0; i < num_tests; i++)
+    {
+        ml->cycle(x, b);
+    }
+    tfinal = (MPI_Wtime() - t0) / num_tests;
+    MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    if (rank == 0) printf("Max Cycle Time: %e\n", t0);
+
+    // TAP Solve Phase iteration times
+    ml->tap_amg = 0;
+    t0 = MPI_Wtime();
+    for (int i = 0; i < num_tests; i++)
+    {
+        ml->cycle(x, b);
+    }
+    tfinal = (MPI_Wtime() - t0) / num_tests;
+    MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    if (rank == 0) printf("Max TAP Cycle Time: %e\n", t0);
 
 
     // Delete raptor hierarchy

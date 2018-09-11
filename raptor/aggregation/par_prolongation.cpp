@@ -65,9 +65,6 @@ ParCSRMatrix* jacobi_prolongation(ParCSRMatrix* A, ParCSRMatrix* T, bool tap_com
                         scaled_A->on_proc_column_map, 
                         true, MPI_COMM_WORLD, comm_t);
             }
-            if (comm_mat_t) *comm_mat_t -= MPI_Wtime();
-            AP_tmp = scaled_A->tap_mult(P);
-            if (comm_mat_t) *comm_mat_t += MPI_Wtime();
         }
         else
         {
@@ -78,12 +75,9 @@ ParCSRMatrix* jacobi_prolongation(ParCSRMatrix* A, ParCSRMatrix* T, bool tap_com
                         scaled_A->on_proc_column_map, 
                         9283, MPI_COMM_WORLD, comm_t);
             }
-
-            if (comm_mat_t) *comm_mat_t -= MPI_Wtime();
-            AP_tmp = scaled_A->mult(P);
-            if (comm_mat_t) *comm_mat_t += MPI_Wtime();
         }
 
+        AP_tmp = scaled_A->mult(P, tap_comm, comm_mat_t);
         P_tmp = P->subtract(AP_tmp);
         delete AP_tmp;
         delete P;
@@ -91,16 +85,15 @@ ParCSRMatrix* jacobi_prolongation(ParCSRMatrix* A, ParCSRMatrix* T, bool tap_com
         P_tmp = NULL;
     }
 
-    if (A->comm)
-    {
-        P->comm = new ParComm(P->partition, P->off_proc_column_map, 
-                P->on_proc_column_map, 9283, MPI_COMM_WORLD, comm_t);
-    }
-
-    if (A->tap_comm)
+    if (tap_comm)
     {
         P->tap_comm = new TAPComm(P->partition, P->off_proc_column_map, 
                 P->on_proc_column_map, true, MPI_COMM_WORLD, comm_t);
+    }
+    else
+    {
+        P->comm = new ParComm(P->partition, P->off_proc_column_map, 
+                P->on_proc_column_map, 9283, MPI_COMM_WORLD, comm_t);
     }
 
     delete scaled_A;

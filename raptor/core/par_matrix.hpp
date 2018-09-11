@@ -460,7 +460,6 @@ namespace raptor
         on_proc = _on_proc;
         off_proc = _off_proc;
         on_proc_num_cols = on_proc->n_cols;
-        off_proc_num_cols = off_proc->n_cols;
         local_num_rows = on_proc->n_rows;
         finalize();
     }
@@ -567,14 +566,15 @@ namespace raptor
     ParCSRMatrix* add(ParCSRMatrix* A);
     ParCSRMatrix* subtract(ParCSRMatrix* B);
 
-    void print_mult(ParCSRMatrix* B, const aligned_vector<int>& proc_distances, 
-                const aligned_vector<int>& worst_proc_distances);
-    void print_mult_T(ParCSCMatrix* A, const aligned_vector<int>& proc_distances,
-                const aligned_vector<int>& worst_proc_distances);
-    void print_mult(const aligned_vector<int>& proc_distances,
-                const aligned_vector<int>& worst_proc_distances);
-    void print_mult_T(const aligned_vector<int>& proc_distances,
-                const aligned_vector<int>& worst_proc_distances);
+    void print_mult(ParCSRMatrix* B, const aligned_vector<int>& proc_distances);
+    void print_mult_T(ParCSCMatrix* A, const aligned_vector<int>& proc_distances);
+    void print_mult(const aligned_vector<int>& proc_distances);
+    void print_mult_T(const aligned_vector<int>& proc_distances);
+    
+    void print_tap_mult(ParCSRMatrix* B, const aligned_vector<int>& proc_distances);
+    void print_tap_mult_T(ParCSCMatrix* A, const aligned_vector<int>& proc_distances);
+    void print_tap_mult(const aligned_vector<int>& proc_distances);
+    void print_tap_mult_T(const aligned_vector<int>& proc_distances);
     
     void mult_helper(ParCSRMatrix* B, ParCSRMatrix* C, CSRMatrix* recv);
     CSRMatrix* mult_T_partial(ParCSCMatrix* A);

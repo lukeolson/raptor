@@ -937,7 +937,6 @@ namespace raptor
             aligned_vector<T>& sendbuf = send_data->get_buffer<T>();
             aligned_vector<T>& recvbuf = recv_data->get_buffer<T>();
             MPI_Datatype type = get_type(sendbuf);
-int rank;MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
             if (recv_data->indptr_T.size())
             {
@@ -1243,6 +1242,13 @@ int rank;MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         {
             return CommPkg::communicate_T(A);
         }
+        CSRMatrix* communication_helper(const aligned_vector<int>& rowptr,
+                const aligned_vector<int>& col_indices, CommData* send_comm, 
+                CommData* recv_comm, int key, MPI_Comm mpi_comm);
+        CSRMatrix* communication_helper(const aligned_vector<int>& rowptr,
+                const aligned_vector<int>& col_indices, const aligned_vector<double>& values,
+                CommData* send_comm, CommData* recv_comm, int key, MPI_Comm mpi_comm);
+
 
 
         // Vector Communication

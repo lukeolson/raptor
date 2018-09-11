@@ -6,8 +6,6 @@
 #include <iostream>
 #include <assert.h>
 
-#include "clear_cache.hpp"
-
 #include "raptor.hpp"
 
 int main(int argc, char* argv[])
@@ -25,6 +23,14 @@ int main(int argc, char* argv[])
 
     coarsen_t coarsen_type = HMIS;
     interp_t interp_type = Extended;
+
+    int agg_num_levels = 0;
+    int p_max_elmts = 0;
+    int h_interp_type = 6;
+    int h_coarsen_type = 10;
+
+    int tap_rs = 3;
+    int tap_sa = 3;
 
     ParMultilevel* ml;
     ParCSRMatrix* A;
@@ -57,6 +63,7 @@ int main(int argc, char* argv[])
         {
             coarsen_type = Falgout;
             interp_type = ModClassical;
+            tap_rs = 5;
 
             dim = 2;
             grid.resize(dim, n);
@@ -107,6 +114,7 @@ int main(int argc, char* argv[])
         switch (mfem_system)
         {
             case 0:
+                strong_threshold = 0.5;
                 A = mfem_laplacian(x, b, mesh_file, order, seq_refines, par_refines);
                 break;
             case 1:
@@ -138,11 +146,8 @@ int main(int argc, char* argv[])
         const char* file = "../../examples/LFAT5.pm";
         A = readParMatrix(file);
     }
-
     if (system != 2)
     {
-        A->tap_comm = new TAPComm(A->partition, A->off_proc_column_map,
-                A->on_proc_column_map);
         x = ParVector(A->global_num_cols, A->on_proc_num_cols, A->partition->first_local_col);
         b = ParVector(A->global_num_rows, A->local_num_rows, A->partition->first_local_row);
         x.set_rand_values();
@@ -150,6 +155,51 @@ int main(int argc, char* argv[])
         x.set_const_value(0.0);
     }
 
+    A->tap_comm = new TAPComm(A->partition, A->off_proc_column_map,
+            A->on_proc_column_map);
+
+
+    // Convert system to Hypre format 
+    HYPRE_IJMatrix A_h_ij = convert(A);
+    HYPRE_IJVector x_h_ij = convert(x);
+    HYPRE_IJVector b_h_ij = convert(b);
+    hypre_ParCSRMatrix* A_h;
+    HYPRE_IJMatrixGetObject(A_h_ij, (void**) &A_h);
+    hypre_ParVector* x_h;
+    HYPRE_IJVectorGetObject(x_h_ij, (void **) &x_h);
+    hypre_ParVector* b_h;
+    HYPRE_IJVectorGetObject(b_h_ij, (void **) &b_h);
+
+    HYPRE_Solver solver_data;
+
+    double* x_h_data = hypre_VectorData(hypre_ParVectorLocalVector(x_h));
+    for (int i = 0; i < A->local_num_rows; i++)
+    {
+        x_h_data[i] = x[i];
+    }
+
+    // Create Hypre Hierarchy
+    double hypre_setup, hypre_solve;
+    MPI_Barrier(MPI_COMM_WORLD);
+    t0 = MPI_Wtime();
+    solver_data = hypre_create_hierarchy(A_h, x_h, b_h,
+                            h_coarsen_type, h_interp_type, p_max_elmts, agg_num_levels,
+                            strong_threshold);
+    hypre_setup = MPI_Wtime() - t0;
+
+    // Solve Hypre Hierarchy
+    MPI_Barrier(MPI_COMM_WORLD);
+    t0 = MPI_Wtime();
+    HYPRE_BoomerAMGSolve(solver_data, A_h, b_h, x_h);
+    hypre_solve = MPI_Wtime() - t0;
+
+    MPI_Reduce(&hypre_setup, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    if (rank == 0) printf("Hypre Setup: %e\n", t0);
+    MPI_Reduce(&hypre_solve, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    if (rank == 0) printf("Hypre Solve: %e\n", t0);
+
+    // Delete hypre hierarchy
+    hypre_BoomerAMGDestroy(solver_data);
 
     // Ruge-Stuben AMG
     if (rank == 0) printf("Ruge Stuben Solver: \n");
@@ -158,14 +208,14 @@ int main(int argc, char* argv[])
     ml->max_iterations = 1000;
     ml->solve_tol = 1e-05;
     ml->num_variables = num_variables;
-    ml->track_times = true;
+    //ml->track_times = true;
     t0 = MPI_Wtime();
     ml->setup(A);
     tfinal = MPI_Wtime() - t0;
     MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     if (rank == 0) printf("Total Setup Time: %e\n", t0);
     ml->print_hierarchy();
-    ml->print_setup_times();
+    //ml->print_setup_times();
 
     MPI_Barrier(MPI_COMM_WORLD);
     ParVector rss_sol = ParVector(x);
@@ -175,7 +225,7 @@ int main(int argc, char* argv[])
     MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     if (rank == 0) printf("Total Solve Time: %e\n", t0);
     ml->print_residuals(iter);
-    ml->print_solve_times();
+    //ml->print_solve_times();
     delete ml;
 
     // TAP Ruge-Stuben AMG
@@ -185,15 +235,15 @@ int main(int argc, char* argv[])
     ml->max_iterations = 1000;
     ml->solve_tol = 1e-05;
     ml->num_variables = num_variables;
-    ml->track_times = true;
-    ml->tap_amg = 0;
+    //ml->track_times = true;
+    ml->tap_amg = tap_rs;
     t0 = MPI_Wtime();
     ml->setup(A);
     tfinal = MPI_Wtime() - t0;
     MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     if (rank == 0) printf("Total Setup Time: %e\n", t0);
     ml->print_hierarchy();
-    ml->print_setup_times();
+    //ml->print_setup_times();
 
     MPI_Barrier(MPI_COMM_WORLD);
     ParVector tap_rss_sol = ParVector(x);
@@ -203,7 +253,7 @@ int main(int argc, char* argv[])
     MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     if (rank == 0) printf("Total Solve Time: %e\n", t0);
     ml->print_residuals(iter);
-    ml->print_solve_times();
+    //ml->print_solve_times();
     delete ml;
 
     // Smoothed Aggregation AMG
@@ -212,14 +262,14 @@ int main(int argc, char* argv[])
             Symmetric, SOR);
     ml->max_iterations = 1000;
     ml->solve_tol = 1e-05;
-    ml->track_times = true;
+    //ml->track_times = true;
     t0 = MPI_Wtime();
     ml->setup(A);
     tfinal = MPI_Wtime() - t0;
     MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     if (rank == 0) printf("Total Setup Time: %e\n", t0);
     ml->print_hierarchy();
-    ml->print_setup_times();
+    //ml->print_setup_times();
 
     ParVector sas_sol = ParVector(x);
     t0 = MPI_Wtime();
@@ -228,7 +278,7 @@ int main(int argc, char* argv[])
     MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     if (rank == 0) printf("Total Solve Time: %e\n", t0);
     ml->print_residuals(iter);
-    ml->print_solve_times();
+    //ml->print_solve_times();
     delete ml;
 
     // TAPSmoothed Aggregation AMG
@@ -237,15 +287,15 @@ int main(int argc, char* argv[])
             Symmetric, SOR);
     ml->max_iterations = 1000;
     ml->solve_tol = 1e-05;
-    ml->track_times = true;
-    ml->tap_amg = 0;
+    //ml->track_times = true;
+    ml->tap_amg = tap_sa;
     t0 = MPI_Wtime();
     ml->setup(A);
     tfinal = MPI_Wtime() - t0;
     MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     if (rank == 0) printf("Total Setup Time: %e\n", t0);
     ml->print_hierarchy();
-    ml->print_setup_times();
+    //ml->print_setup_times();
 
     ParVector tap_sas_sol = ParVector(x);
     t0 = MPI_Wtime();
@@ -254,13 +304,21 @@ int main(int argc, char* argv[])
     MPI_Reduce(&tfinal, &t0, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
     if (rank == 0) printf("Total Solve Time: %e\n", t0);
     ml->print_residuals(iter);
-    ml->print_solve_times();
+    //ml->print_solve_times();
     delete ml;
 
+
+
+
+
+    HYPRE_IJMatrixDestroy(A_h_ij);
+    HYPRE_IJVectorDestroy(x_h_ij);
+    HYPRE_IJVectorDestroy(b_h_ij);
 
     delete A;
 
     MPI_Finalize();
     return 0;
 }
+
 
